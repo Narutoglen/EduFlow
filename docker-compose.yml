@@ -1,0 +1,138 @@
+# EduFlow full stack — local-first, offline. See /docs/deployment_architecture.md.
+# Profiles: default (app), test (QA runner), security (scanners).
+# Only `web` is published to the host; ai-service/postgres/redis/ollama are network-internal.
+
+name: eduflow
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16@sha256:6d5c7b5aa3eb2098a2365f6d8cff723fded9e0e680757908b0b144b47f9c069c
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-eduflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eduflow}
+      POSTGRES_DB: ${POSTGRES_DB:-eduflow}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-eduflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [eduflow-net]
+
+  redis:
+    image: redis:7-alpine@sha256:b1addbe72465a718643cff9e60a58e6df1841e29d6d7d60c9a85d8d72f08d1a7
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [eduflow-net]
+
+  ollama:
+    image: ollama/ollama:0.5.4@sha256:eec87ca210d658fca461456fcf35e537ab1425a4b4719f23e9fcbc587435b31d
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks: [eduflow-net]
+
+  ai-service:
+    build: ./ai-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-eduflow}:${POSTGRES_PASSWORD:-eduflow}@postgres:5432/${POSTGRES_DB:-eduflow}
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_URL: http://ollama:11434
+      LLM_MODEL: ${LLM_MODEL:-llama3.1:8b}
+      EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      AI_SERVICE_TOKEN_SECRET: ${AI_SERVICE_TOKEN_SECRET:?set in .env}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - audio-tmp:/data/audio   # shared hand-off; worker purges after transcription (VA-4)
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      ollama: { condition: service_started }
+    networks: [eduflow-net]
+    # not published to host — reached only via the web BFF
+
+  ai-worker:
+    build: ./ai-service
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "--loglevel=INFO", "--concurrency=2", "-Q", "ai"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-eduflow}:${POSTGRES_PASSWORD:-eduflow}@postgres:5432/${POSTGRES_DB:-eduflow}
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_URL: http://ollama:11434
+      LLM_MODEL: ${LLM_MODEL:-llama3.1:8b}
+      EMBED_MODEL: ${EMBED_MODEL:-nomic-embed-text}
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      AI_SERVICE_TOKEN_SECRET: ${AI_SERVICE_TOKEN_SECRET:?set in .env}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - audio-tmp:/data/audio   # reads + deletes uploaded audio (raw voice never persisted)
+    depends_on:
+      ai-service: { condition: service_started }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    networks: [eduflow-net]
+
+  web:
+    build: ./   # EduFlow Next.js app (Frontend owns refinements)
+    environment:
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_TOKEN_SECRET: ${AI_SERVICE_TOKEN_SECRET:?set in .env}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-eduflow}:${POSTGRES_PASSWORD:-eduflow}@postgres:5432/${POSTGRES_DB:-eduflow}
+    ports:
+      - "3000:3000"
+    depends_on:
+      ai-service: { condition: service_started }
+      postgres: { condition: service_healthy }
+    networks: [eduflow-net]
+
+  # --- QA profile ---
+  test:
+    profiles: ["test"]
+    build: ./tests
+    environment:
+      WEB_BASE_URL: http://web:3000
+      AI_BASE_URL: http://ai-service:8000
+    depends_on:
+      web: { condition: service_started }
+    networks: [eduflow-net]
+
+  # --- Security profile ---
+  zap:
+    profiles: ["security"]
+    image: zaproxy/zap-stable:2.15.0
+    command: ["zap-baseline.py", "-t", "http://web:3000", "-I"]
+    depends_on:
+      web: { condition: service_started }
+    networks: [eduflow-net]
+
+  trivy:
+    profiles: ["security"]
+    image: aquasec/trivy:0.58.1
+    entrypoint: ["trivy", "fs", "--scanners", "vuln,secret,misconfig", "/scan"]
+    volumes:
+      - ./:/scan:ro
+    networks: [eduflow-net]
+
+volumes:
+  pgdata:
+  ollama-models:
+  audio-tmp:
+
+networks:
+  eduflow-net:
+    driver: bridge

@@ -1,0 +1,20 @@
+# EduFlow ai-service — pinned dependencies (Security: pin & verify, A03:2025)
+# Versions bumped at M4 to clear pip-audit findings (SEC-001..003); resolve verified via pip dry-run.
+fastapi==0.136.3
+starlette==1.2.1            # explicit pin — fixed (was 0.41.3, CVE-2025-54121/62727, PYSEC-2026-161)
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+SQLAlchemy==2.0.36
+alembic==1.14.0
+psycopg[binary]==3.2.3
+pgvector==0.3.6
+celery[redis]==5.4.0
+redis==5.2.1
+httpx==0.28.1
+python-multipart==0.0.32   # fixed (was 0.0.20, CVE-2026-24486/40347/42561)
+PyJWT==2.13.0              # fixed (was 2.10.1, 8 PYSEC/CVE advisories) — service-token verifier
+# Worker-side (extraction / STT) — imported lazily in pipelines:
+# PyMuPDF==1.25.1
+# python-pptx==1.0.2
+# faster-whisper==1.1.0

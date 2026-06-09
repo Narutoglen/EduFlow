@@ -10,6 +10,9 @@ import {
   Play,
 } from "lucide-react";
 import { PageShell } from "@/components/site-shell";
+import { AiSummaryPanel } from "@/components/ai-summary-panel";
+import { FlashcardStudy } from "@/components/flashcard-study";
+import { VoiceAssistant } from "@/components/voice-assistant";
 import { Badge, ButtonLink, EmptyState, Panel, ProgressBar } from "@/components/ui";
 import {
   canAccessLesson,
@@ -168,6 +171,12 @@ export default async function LearnPage({
                   </form>
                 </div>
               </Panel>
+
+              <AiSummaryPanel lessonId={lesson.id} />
+
+              <FlashcardStudy lessonId={lesson.id} />
+
+              <VoiceAssistant courseId={course.id} />
 
               <Panel>
                 <h2 className="text-xl font-semibold">Lesson notes</h2>
