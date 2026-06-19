@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     {
-      id: `mock-enrollment-${courseId}`,
+      id: `enrollment-${courseId}`,
       courseId,
       studentId: student.id,
       status: course ? "ENROLLED" : "COURSE_NOT_FOUND",

@@ -1,4 +1,5 @@
-import { Clock, Star, Users } from "lucide-react";
+import { Award, CheckCircle2, Clock, Gauge, Star, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { formatMoney, getCategory, getInstructor } from "@/lib/eduflow";
 import type { Course } from "@/lib/types";
@@ -16,11 +17,13 @@ export function CourseCard({
 
   return (
     <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
-      <Link href={`/courses/${course.slug}`} className="block">
-        <img
+      <Link href={`/courses/${course.slug}`} className="relative block h-44">
+        <Image
           src={course.thumbnailUrl}
           alt=""
-          className="h-44 w-full object-cover"
+          fill
+          sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+          className="object-cover"
         />
       </Link>
       <div className="space-y-4 p-5">
@@ -51,14 +54,33 @@ export function CourseCard({
             {course.durationHours}h
           </span>
           <span className="inline-flex items-center gap-1">
+            <Gauge size={15} />
+            {course.estimatedWeeklyHours}h/week
+          </span>
+          <span className="inline-flex items-center gap-1">
             <Users size={15} />
-            {course.reviewCount} reviews
+            {course.reviewCount} {course.reviewCount === 1 ? "review" : "reviews"}
           </span>
         </div>
+        <div className="rounded-md bg-stone-50 p-3 text-sm text-zinc-700 dark:bg-zinc-950 dark:text-zinc-200">
+          <p className="font-medium text-zinc-950 dark:text-white">
+            For: {course.audience}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {course.learningOutcomes.slice(0, 2).map((outcome) => (
+              <li key={outcome} className="flex gap-2">
+                <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-500" />
+                <span>{outcome}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
         <div className="flex items-center gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-          <img
+          <Image
             src={instructor.avatarUrl}
             alt=""
+            width={36}
+            height={36}
             className="h-9 w-9 rounded-full object-cover"
           />
           <div>
@@ -69,6 +91,12 @@ export function CourseCard({
               {course.difficulty}
             </p>
           </div>
+          {course.certificateEligible ? (
+            <span className="ml-auto inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
+              <Award size={13} />
+              Certificate
+            </span>
+          ) : null}
         </div>
         {typeof progress === "number" ? (
           <div className="space-y-2">

@@ -13,8 +13,8 @@ import {
 import type { Principal } from "./ai-client";
 import type { Role } from "./types";
 
-// Demo wiring: the MVP exposes role-scoped demo users (see README). In production this resolves the
-// authenticated user from the httpOnly session. Default to the Student demo persona.
+// Local role wiring. In production this resolves the authenticated user from the
+// httpOnly session. Default to the Student persona.
 export function getCurrentPrincipal(role: Role = "STUDENT"): Principal {
   const user = userForRole(role);
   const enrolled = getEnrollmentsForStudent(user.id).map((e) => e.courseId);

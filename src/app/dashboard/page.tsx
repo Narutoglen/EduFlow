@@ -1,4 +1,11 @@
-import { Award, Bell, BookOpen, Flame, GraduationCap } from "lucide-react";
+import {
+  ArrowRight,
+  Award,
+  Bell,
+  BookOpen,
+  Flame,
+  GraduationCap,
+} from "lucide-react";
 import { CourseCard } from "@/components/course-card";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, ProgressBar, StatCard } from "@/components/ui";
@@ -6,6 +13,7 @@ import {
   canIssueCertificate,
   getCourseById,
   getEnrollmentsForStudent,
+  getLesson,
   getNotifications,
   getQuizAttempts,
   getSubmissionsForStudent,
@@ -24,6 +32,16 @@ export default function StudentDashboardPage() {
   const notifications = getNotifications(student.id);
   const quizAttempts = getQuizAttempts(student.id);
   const submissions = getSubmissionsForStudent(student.id);
+  const continueEnrollment =
+    enrollments.find((enrollment) => enrollment.progressPercent < 100) ??
+    enrollments[0];
+  const continueCourse = continueEnrollment
+    ? getCourseById(continueEnrollment.courseId)
+    : undefined;
+  const continueLesson =
+    continueEnrollment && continueCourse
+      ? getLesson(continueCourse.id, continueEnrollment.lastAccessedLessonId)
+      : undefined;
   const averageGrade =
     enrollments.reduce((total, enrollment) => total + enrollment.gradePercent, 0) /
     Math.max(enrollments.length, 1);
@@ -41,6 +59,28 @@ export default function StudentDashboardPage() {
           </ButtonLink>
         }
       />
+
+      {continueEnrollment && continueCourse && continueLesson ? (
+        <Panel className="mb-8 grid gap-5 border-cyan-200 bg-cyan-50/70 dark:border-cyan-900 dark:bg-cyan-950/40 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div>
+            <Badge tone="blue">Next action</Badge>
+            <h2 className="mt-3 text-2xl font-semibold text-zinc-950 dark:text-white">
+              Continue: {continueLesson.title}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-zinc-200">
+              Pick up {continueCourse.title} where you left off. You are{" "}
+              {continueEnrollment.progressPercent}% through the course with a{" "}
+              {continueEnrollment.gradePercent}% current grade.
+            </p>
+          </div>
+          <ButtonLink
+            href={`/learn/${continueCourse.id}/${continueLesson.id}`}
+          >
+            Resume lesson
+            <ArrowRight size={16} />
+          </ButtonLink>
+        </Panel>
+      ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
         <StatCard

@@ -1,19 +1,19 @@
 # EduFlow
 
-EduFlow is a full-stack Next.js LMS MVP with role dashboards for Students,
-Lecturers, Teaching Assistants, and Admins. The first milestone is runnable
-without external credentials by using seeded in-memory demo data and mock
-service adapters.
+EduFlow is a full-stack Next.js learning platform with role dashboards for
+Students, Lecturers, Teaching Assistants, and Admins. It runs locally without
+external credentials by using seeded in-memory data and replaceable service
+integrations.
 
 ## What is included
 
 - Course catalog with search, filters, pricing, ratings, details, syllabus, and reviews.
 - Student learning dashboard, course player, notes, resources, quizzes, assignments, forums, grades, progress, and certificate verification.
-- Lecturer workspace with course builder structure, modules, lesson ordering handles, grading, announcements, analytics, and live session placeholders.
+- Lecturer workspace with course builder structure, modules, lesson ordering handles, grading, announcements, analytics, and live session scheduling.
 - Teaching Assistant workspace for delegated rosters, grading, and forum moderation without content editing.
 - Admin console for user management, course approvals, analytics, revenue, categories, and global settings.
 - Prisma/PostgreSQL schema and seed script for the production data model.
-- Mock adapters for payments, email, storage, video playback, certificates, and Auth.js-compatible JWT sessions.
+- Replaceable integrations for payments, email, storage, video playback, certificates, and Auth.js-compatible JWT sessions.
 
 ## Run locally
 
@@ -37,7 +37,7 @@ npm run prisma:seed
 ## Database setup
 
 Copy `.env.example` to `.env` and set `DATABASE_URL` when you want to use
-PostgreSQL and Prisma instead of the local demo data.
+PostgreSQL and Prisma instead of the local seeded data.
 
 ```bash
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/eduflow"
@@ -51,4 +51,4 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/eduflow"
 - Admin: `noah@admin.eduflow.test`
 
 The local auth pages expose the intended flows while avoiding real OAuth,
-email, and credential setup during MVP review.
+email, and credential setup during local review.

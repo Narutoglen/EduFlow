@@ -114,6 +114,16 @@ export function getLesson(courseId: string, lessonId: string) {
   return getLessons(course).find((lesson) => lesson.id === lessonId);
 }
 
+export function getResource(resourceId: string) {
+  for (const course of courses) {
+    for (const lesson of getLessons(course)) {
+      const resource = lesson.resources.find((item) => item.id === resourceId);
+      if (resource) return { course, lesson, resource };
+    }
+  }
+  return undefined;
+}
+
 export function getFirstLesson(course: Course) {
   return getLessons(course)[0];
 }

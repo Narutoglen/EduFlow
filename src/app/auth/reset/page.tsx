@@ -11,14 +11,15 @@ export default function ResetPage() {
       <PageTitle
         eyebrow="Password reset"
         title="Send a reset link"
-        body="The email adapter logs transactional messages in local development and can be swapped for Resend or SendGrid."
+        body="Enter your account email and EduFlow will send instructions for setting a new password."
       />
       <Panel className="mx-auto max-w-xl">
         <div className="flex items-center gap-2">
           <MailCheck className="text-cyan-700" size={20} />
           <h2 className="text-xl font-semibold">Reset password</h2>
         </div>
-        <form action="/api/auth/demo" method="post" className="mt-4 space-y-4">
+        <form action="/api/auth/session" method="post" className="mt-4 space-y-4">
+          <input type="hidden" name="intent" value="reset" />
           <label className="block text-sm font-medium">
             Email address
             <input

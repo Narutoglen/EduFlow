@@ -2,9 +2,9 @@ export type Role = "STUDENT" | "LECTURER" | "TA" | "ADMIN";
 
 export type CourseStatus = "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED";
 
-export type Difficulty = "Beginner" | "Intermediate" | "Advanced";
+type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 
-export type ResourceType = "pdf" | "slides" | "code" | "link";
+type ResourceType = "pdf" | "slides" | "code" | "link";
 
 export type User = {
   id: string;
@@ -24,7 +24,7 @@ export type Category = {
   color: string;
 };
 
-export type LessonResource = {
+type LessonResource = {
   id: string;
   title: string;
   type: ResourceType;
@@ -42,20 +42,20 @@ export type Lesson = {
   forumThreadId: string;
 };
 
-export type Module = {
+type Module = {
   id: string;
   title: string;
   order: number;
   lessons: Lesson[];
 };
 
-export type QuizChoice = {
+type QuizChoice = {
   id: string;
   label: string;
   isCorrect: boolean;
 };
 
-export type QuizQuestion = {
+type QuizQuestion = {
   id: string;
   prompt: string;
   type: "MCQ" | "TRUE_FALSE";
@@ -73,7 +73,7 @@ export type Quiz = {
   questions: QuizQuestion[];
 };
 
-export type Assignment = {
+type Assignment = {
   id: string;
   courseId: string;
   lessonId: string;
@@ -97,6 +97,10 @@ export type Course = {
   rating: number;
   reviewCount: number;
   durationHours: number;
+  estimatedWeeklyHours: number;
+  audience: string;
+  learningOutcomes: string[];
+  certificateEligible: boolean;
   prerequisites: string[];
   tags: string[];
   lecturerId: string;

@@ -70,8 +70,8 @@ export default async function VerifyCertificatePage({
           </div>
           <div className="rounded-lg bg-stone-100 p-5 dark:bg-zinc-950">
             <p className="text-sm text-zinc-600 dark:text-zinc-300">
-              Download generation is served by the certificate adapter in local
-              development and can be replaced with a production PDF renderer.
+              Download a shareable certificate record for learner portfolios,
+              employer checks, or course completion files.
             </p>
             <div className="mt-4">
               <ButtonLink
@@ -79,7 +79,7 @@ export default async function VerifyCertificatePage({
                 variant="secondary"
               >
                 <Download size={16} />
-                Download PDF
+                Download record
               </ButtonLink>
             </div>
           </div>

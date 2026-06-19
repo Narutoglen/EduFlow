@@ -8,6 +8,8 @@ export async function POST(request: Request) {
     ? await request.json()
     : Object.fromEntries((await request.formData()).entries());
   const assignmentId = String(payload.assignmentId ?? "");
+  const courseId = String(payload.courseId ?? "");
+  const lessonId = String(payload.lessonId ?? "");
   const assignment = courses
     .flatMap((course) => course.assignments)
     .find((item) => item.id === assignmentId);
@@ -17,9 +19,16 @@ export async function POST(request: Request) {
   }
 
   const upload = await storageAdapter.createUploadUrl(`${assignmentId}.txt`);
+  if (!contentType.includes("application/json")) {
+    return NextResponse.redirect(
+      new URL(`/learn/${courseId}/${lessonId}?notice=assignment-submitted`, request.url),
+      303,
+    );
+  }
+
   return NextResponse.json(
     {
-      id: `mock-submission-${assignmentId}`,
+      id: `submission-${assignmentId}`,
       assignmentId,
       studentId: userForRole("STUDENT").id,
       status: "SUBMITTED",

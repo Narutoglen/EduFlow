@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "EduFlow | Course Platform",
   description:
-    "A role-based LMS MVP for video courses, quizzes, assignments, discussions, and certificates.",
+    "A role-based learning platform for video courses, quizzes, assignments, discussions, and certificates.",
 };
 
 export default function RootLayout({

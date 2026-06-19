@@ -140,7 +140,7 @@ export function FlashcardStudy({ lessonId }: { lessonId: string }) {
         <div className="flex items-center gap-2">
           <Layers className="text-cyan-600" size={20} />
           <h2 className="text-xl font-semibold">Flashcards</h2>
-          <Badge tone="blue">SRS</Badge>
+          <Badge tone="blue">Spaced practice</Badge>
         </div>
         {phase === "studying" ? (
           <span className="text-sm text-zinc-500">

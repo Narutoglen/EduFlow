@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     studentId: userForRole("STUDENT").id,
   });
 
-  return NextResponse.json(checkout);
+  return NextResponse.redirect(new URL(checkout.checkoutUrl, request.url));
 }
 
 export async function POST(request: Request) {

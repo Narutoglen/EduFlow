@@ -1,4 +1,5 @@
-import { ArrowRight, BookOpen, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, Award, BookOpen, CheckCircle2, Sparkles } from "lucide-react";
+import Image from "next/image";
 import { CourseCard } from "@/components/course-card";
 import { PageShell } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, StatCard } from "@/components/ui";
@@ -19,16 +20,19 @@ export default function Home() {
   return (
     <PageShell user={student} className="space-y-10">
       <section className="relative overflow-hidden rounded-lg bg-zinc-950 text-white">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80"
           alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-45"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-45"
         />
         <div className="relative grid gap-10 px-6 py-12 md:grid-cols-[1.15fr_0.85fr] md:px-10 lg:px-12">
           <div className="max-w-2xl">
             <Badge tone="amber">
               <Sparkles size={14} />
-              Full LMS vertical slice
+              Guided learning platform
             </Badge>
             <h1 className="mt-5 text-4xl font-semibold tracking-normal md:text-6xl">
               EduFlow
@@ -48,11 +52,11 @@ export default function Home() {
             </div>
           </div>
           <Panel className="bg-white/95 text-zinc-950 backdrop-blur">
-            <h2 className="text-lg font-semibold">Demo status</h2>
+            <h2 className="text-lg font-semibold">Platform highlights</h2>
             <div className="mt-5 space-y-4">
               {[
-                "Email/password and Google SSO boundaries",
-                "Course approval and mocked payments",
+                "Secure sign-in and role-based workspaces",
+                "Course review and checkout workflows",
                 "Progress, grades, forums, and certificates",
               ].map((item) => (
                 <div key={item} className="flex gap-3 text-sm">
@@ -69,7 +73,7 @@ export default function Home() {
         <StatCard
           label="Students"
           value={`${users.filter((user) => user.role === "STUDENT").length}`}
-          detail="Seeded learner profiles"
+          detail="Active learner profiles"
         />
         <StatCard
           label="Courses"
@@ -79,14 +83,32 @@ export default function Home() {
         <StatCard
           label="Enrollments"
           value={`${enrollments.length}`}
-          detail="Paid and free access paths"
+          detail="Free and paid course access"
         />
         <StatCard
           label="Completion"
           value={`${stats.completionAverage}%`}
-          detail="Average demo progress"
+          detail="Average learner progress"
         />
       </section>
+
+      <Panel className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
+        <div className="flex gap-4">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-700">
+            <Award size={24} />
+          </span>
+          <div>
+            <h2 className="text-xl font-semibold">Verifiable certificates</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+              Completed courses can produce a public certificate page with the
+              learner, course, lecturer, completion date, and verification ID.
+            </p>
+          </div>
+        </div>
+        <ButtonLink href="/verify/EDU-2026-DATA-9K2" variant="secondary">
+          View certificate example
+        </ButtonLink>
+      </Panel>
 
       <section>
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

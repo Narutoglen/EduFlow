@@ -29,12 +29,32 @@ import {
 import { userForRole } from "@/lib/mock-data";
 import { videoAdapter } from "@/lib/adapters";
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function noticeText(notice?: string) {
+  return {
+    "progress-saved": "Lesson progress saved.",
+    "quiz-passed": "Quiz submitted. Nice work - you passed this checkpoint.",
+    "quiz-review": "Quiz submitted. Review the lesson notes and try the checkpoint again.",
+    "assignment-submitted": "Assignment submitted for review.",
+  }[notice ?? ""];
+}
+
 export default async function LearnPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string; lessonId: string }>;
+  searchParams: SearchParams;
 }) {
   const { courseId, lessonId } = await params;
+  const query = await searchParams;
+  const notice = valueOf(query.notice);
+  const message = noticeText(notice);
   const course = getCourseById(courseId);
   if (!course) notFound();
 
@@ -79,7 +99,22 @@ export default async function LearnPage({
         </div>
       </div>
 
-      <section className="grid gap-6 lg:grid-cols-[300px_1fr]">
+      {message ? (
+        <Panel
+          className={
+            notice === "quiz-review"
+              ? "border-amber-200 bg-amber-50 text-amber-950"
+              : "border-emerald-200 bg-emerald-50 text-emerald-950"
+          }
+        >
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={18} />
+            <p className="font-semibold">{message}</p>
+          </div>
+        </Panel>
+      ) : null}
+
+      <section className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_360px]">
         <aside className="space-y-4">
           <Panel>
             <div className="mb-3 flex justify-between text-sm font-medium">
@@ -94,16 +129,13 @@ export default async function LearnPage({
               {getLessons(course).map((item) => {
                 const completed = enrollment?.completedLessonIds.includes(item.id);
                 const accessible = canAccessLesson(course, item, enrollment);
-                return (
-                  <a
-                    key={item.id}
-                    href={accessible ? `/learn/${course.id}/${item.id}` : "#"}
-                    className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${
-                      item.id === lesson.id
-                        ? "bg-cyan-50 text-cyan-900 dark:bg-cyan-950 dark:text-cyan-100"
-                        : "bg-stone-50 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
-                    }`}
-                  >
+                const itemClass = `flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm ${
+                  item.id === lesson.id
+                    ? "bg-cyan-50 text-cyan-900 dark:bg-cyan-950 dark:text-cyan-100"
+                    : "bg-stone-50 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
+                }`;
+                const content = (
+                  <>
                     <span className="inline-flex items-center gap-2">
                       {completed ? (
                         <CheckCircle2 size={15} className="text-emerald-500" />
@@ -115,7 +147,18 @@ export default async function LearnPage({
                       {item.title}
                     </span>
                     <span>{item.durationMinutes}m</span>
-                  </a>
+                  </>
+                );
+                return (
+                  accessible ? (
+                    <a key={item.id} href={`/learn/${course.id}/${item.id}`} className={itemClass}>
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={item.id} aria-disabled="true" className={`${itemClass} opacity-70`}>
+                      {content}
+                    </div>
+                  )
                 );
               })}
             </div>
@@ -165,6 +208,11 @@ export default async function LearnPage({
                   <form action="/api/progress" method="post">
                     <input type="hidden" name="courseId" value={course.id} />
                     <input type="hidden" name="lessonId" value={lesson.id} />
+                    <input
+                      type="hidden"
+                      name="returnTo"
+                      value={`/learn/${course.id}/${lesson.id}?notice=progress-saved`}
+                    />
                     <button className="rounded-md bg-emerald-600 px-3 py-2 font-semibold text-white">
                       Mark complete
                     </button>
@@ -172,43 +220,49 @@ export default async function LearnPage({
                 </div>
               </Panel>
 
-              <AiSummaryPanel lessonId={lesson.id} />
-
-              <FlashcardStudy lessonId={lesson.id} />
-
-              <VoiceAssistant courseId={course.id} />
-
               <Panel>
-                <h2 className="text-xl font-semibold">Lesson notes</h2>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                  Personal notes are scoped to this lesson and can be exported by
-                  the notes service adapter.
-                </p>
-                <textarea
-                  className="mt-4 min-h-32 w-full rounded-md border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-                  defaultValue="Summarize the educator review checkpoint and examples I can reuse in my class."
-                />
-                <div className="mt-3">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl font-semibold">Lesson workspace</h2>
+                    <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                      Keep notes and resources beside the lesson work you need to finish.
+                    </p>
+                  </div>
                   <ButtonLink href="/api/progress?export=notes" variant="secondary">
                     <FileText size={16} />
-                    Export notes PDF
+                    Download notes
                   </ButtonLink>
                 </div>
-              </Panel>
 
-              <Panel>
-                <h2 className="text-xl font-semibold">Resources</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {lesson.resources.map((resource) => (
-                    <a
-                      key={resource.id}
-                      href={resource.url}
-                      className="flex items-center justify-between rounded-lg border border-zinc-200 p-3 text-sm hover:bg-stone-50 dark:border-zinc-800 dark:hover:bg-zinc-950"
-                    >
-                      <span>{resource.title}</span>
-                      <Download size={16} />
-                    </a>
-                  ))}
+                <div className="mt-5 grid gap-5 lg:grid-cols-2">
+                  <div>
+                    <h3 className="text-sm font-semibold">Notes</h3>
+                    <textarea
+                      className="mt-3 min-h-36 w-full rounded-md border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                      defaultValue="Summarize the educator review checkpoint and examples I can reuse in my class."
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Resources</h3>
+                    <div className="mt-3 grid gap-3">
+                      {lesson.resources.length ? (
+                        lesson.resources.map((resource) => (
+                          <a
+                            key={resource.id}
+                            href={resource.url}
+                            className="flex items-center justify-between rounded-lg border border-zinc-200 p-3 text-sm hover:bg-stone-50 dark:border-zinc-800 dark:hover:bg-zinc-950"
+                          >
+                            <span>{resource.title}</span>
+                            <Download size={16} />
+                          </a>
+                        ))
+                      ) : (
+                        <p className="rounded-md bg-stone-50 p-3 text-sm text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">
+                          No resources attached to this lesson.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </Panel>
 
@@ -230,6 +284,8 @@ export default async function LearnPage({
                     className="mt-4 space-y-4"
                   >
                     <input type="hidden" name="quizId" value={quiz.id} />
+                    <input type="hidden" name="courseId" value={course.id} />
+                    <input type="hidden" name="lessonId" value={lesson.id} />
                     {quiz.questions.map((question) => (
                       <fieldset key={question.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
                         <legend className="px-1 font-medium">{question.prompt}</legend>
@@ -271,10 +327,12 @@ export default async function LearnPage({
                     </div>
                     <form action="/api/assignments/submit" method="post" className="space-y-3">
                       <input type="hidden" name="assignmentId" value={assignment.id} />
+                      <input type="hidden" name="courseId" value={course.id} />
+                      <input type="hidden" name="lessonId" value={lesson.id} />
                       <textarea
                         name="body"
                         className="min-h-24 w-full rounded-md border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-                        placeholder="Paste your submission or upload metadata"
+                        placeholder="Paste your submission"
                       />
                       <button className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">
                         Submit assignment
@@ -314,6 +372,20 @@ export default async function LearnPage({
             </>
           )}
         </div>
+
+        {canAccess ? (
+          <aside className="space-y-4 lg:col-span-2 xl:col-span-1">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-normal text-cyan-700 dark:text-cyan-300">
+                Learning tools
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold">Study support</h2>
+            </div>
+            <AiSummaryPanel lessonId={lesson.id} />
+            <FlashcardStudy lessonId={lesson.id} />
+            <VoiceAssistant courseId={course.id} />
+          </aside>
+        ) : null}
       </section>
     </PageShell>
   );

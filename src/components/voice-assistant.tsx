@@ -126,7 +126,7 @@ export function VoiceAssistant({ courseId }: { courseId: string }) {
         <div className="flex items-center gap-2">
           <Bot className="text-emerald-600" size={20} />
           <h2 className="text-xl font-semibold">Learning assistant</h2>
-          <Badge tone="green">Voice + RAG</Badge>
+          <Badge tone="green">Course Q&amp;A</Badge>
         </div>
         <button
           onClick={() => setTts((v) => !v)}

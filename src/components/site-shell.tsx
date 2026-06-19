@@ -2,9 +2,9 @@ import {
   BookOpen,
   GraduationCap,
   LayoutDashboard,
+  LogIn,
   Moon,
   ShieldCheck,
-  UserCog,
   UsersRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -13,14 +13,30 @@ import { roleLabel } from "@/lib/eduflow";
 import type { Role, User } from "@/lib/types";
 import { ButtonLink, cn } from "./ui";
 
-const roleLinks: { href: string; role: Role; icon: ReactNode }[] = [
-  { href: "/dashboard", role: "STUDENT", icon: <LayoutDashboard size={16} /> },
-  { href: "/lecturer", role: "LECTURER", icon: <GraduationCap size={16} /> },
-  { href: "/ta", role: "TA", icon: <UsersRound size={16} /> },
-  { href: "/admin", role: "ADMIN", icon: <ShieldCheck size={16} /> },
-];
+const roleHome: Record<Role, { href: string; label: string; icon: ReactNode }> = {
+  STUDENT: {
+    href: "/dashboard",
+    label: "My learning",
+    icon: <LayoutDashboard size={16} />,
+  },
+  LECTURER: {
+    href: "/lecturer",
+    label: "Lecturer workspace",
+    icon: <GraduationCap size={16} />,
+  },
+  TA: {
+    href: "/ta",
+    label: "Support queue",
+    icon: <UsersRound size={16} />,
+  },
+  ADMIN: {
+    href: "/admin",
+    label: "Admin console",
+    icon: <ShieldCheck size={16} />,
+  },
+};
 
-export function SiteHeader({ user }: { user?: User }) {
+function SiteHeader({ user }: { user?: User }) {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-stone-50/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
@@ -32,7 +48,7 @@ export function SiteHeader({ user }: { user?: User }) {
             <span className="text-lg tracking-normal">EduFlow</span>
           </Link>
           <span className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-            {user ? roleLabel(user.role) : "Demo LMS"}
+            {user ? roleLabel(user.role) : "Learning platform"}
           </span>
         </div>
         <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="Main">
@@ -40,15 +56,15 @@ export function SiteHeader({ user }: { user?: User }) {
             <BookOpen size={16} />
             Courses
           </ButtonLink>
-          {roleLinks.map((item) => (
-            <ButtonLink key={item.role} href={item.href} variant="ghost">
-              {item.icon}
-              {roleLabel(item.role)}
+          {user ? (
+            <ButtonLink href={roleHome[user.role].href} variant="ghost">
+              {roleHome[user.role].icon}
+              {roleHome[user.role].label}
             </ButtonLink>
-          ))}
+          ) : null}
           <ButtonLink href="/auth/login" variant="secondary">
-            <UserCog size={16} />
-            Demo login
+            <LogIn size={16} />
+            Sign in
           </ButtonLink>
           <button
             className="inline-flex min-h-10 items-center justify-center rounded-md px-3 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
