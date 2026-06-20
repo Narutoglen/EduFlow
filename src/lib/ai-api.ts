@@ -18,7 +18,7 @@ export const summarySchema = z.object({
 });
 export type Summary = z.infer<typeof summarySchema>;
 
-const jobSchema = z.object({
+export const jobSchema = z.object({
   jobId: z.string(),
   kind: z.enum(["SUMMARIZE", "FLASHCARDS", "TRANSCRIBE", "INGEST", "RAG"]),
   status: z.enum(["PENDING", "RUNNING", "READY", "FAILED", "CANCELLED"]),
@@ -30,7 +30,7 @@ const jobSchema = z.object({
 });
 export type Job = z.infer<typeof jobSchema>;
 
-const errorSchema = z.object({
+export const errorSchema = z.object({
   error: z.object({ code: z.string(), message: z.string(), requestId: z.string().optional() }),
 });
 
@@ -88,7 +88,7 @@ export async function getJob(jobId: string): Promise<Job> {
 }
 
 // ---- Flashcards (contract §3) ----
-const cardSchema = z.object({
+export const cardSchema = z.object({
   id: z.string(),
   front: z.string(),
   back: z.string(),
@@ -100,7 +100,7 @@ const cardSchema = z.object({
 });
 export type Card = z.infer<typeof cardSchema>;
 
-const deckSchema = z.object({
+export const deckSchema = z.object({
   id: z.string(),
   lessonId: z.string(),
   title: z.string(),
@@ -110,12 +110,12 @@ const deckSchema = z.object({
 export const flashcardsListSchema = z.object({ deck: deckSchema, cards: z.array(cardSchema) });
 export type FlashcardsList = z.infer<typeof flashcardsListSchema>;
 
-const dueListSchema = z.object({
+export const dueListSchema = z.object({
   items: z.array(cardSchema),
   nextCursor: z.string().nullable().optional(),
 });
 
-const reviewSchema = z.object({
+export const reviewSchema = z.object({
   id: z.string(),
   ease: z.number(),
   interval: z.number(),
@@ -175,7 +175,7 @@ export async function reviewCard(cardId: string, grade: number): Promise<Review>
 }
 
 // ---- Assistant (contract §4) ----
-const citationSchema = z.object({
+export const citationSchema = z.object({
   lessonId: z.string().nullable().optional(),
   title: z.string(),
   chunkIndex: z.number(),
@@ -183,7 +183,7 @@ const citationSchema = z.object({
 });
 export type Citation = z.infer<typeof citationSchema>;
 
-const askOutSchema = z.object({
+export const askOutSchema = z.object({
   conversationId: z.string(),
   answer: z.string(),
   citations: z.array(citationSchema).default([]),

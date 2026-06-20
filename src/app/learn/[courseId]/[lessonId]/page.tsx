@@ -220,6 +220,12 @@ export default async function LearnPage({
                 </div>
               </Panel>
 
+              <AiSummaryPanel lessonId={lesson.id} />
+
+              <FlashcardStudy lessonId={lesson.id} />
+
+              <VoiceAssistant courseId={course.id} />
+
               <Panel>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>

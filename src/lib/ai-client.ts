@@ -23,7 +23,7 @@ function base64url(input: Buffer | string): string {
 }
 
 /** Mint an HS256 JWT matching the ai-service verifier (sub, role, enrolled, owned, aud, exp). */
-function mintServiceToken(p: Principal): string {
+export function mintServiceToken(p: Principal): string {
   if (!SECRET) throw new Error("AI_SERVICE_TOKEN_SECRET is not configured");
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "HS256", typ: "JWT" };
