@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import {
   Award,
   CheckCircle2,
   Clock,
   Play,
   Star,
+  Target,
   Users,
 } from "lucide-react";
 import { PageShell } from "@/components/site-shell";
@@ -22,12 +24,21 @@ import {
 } from "@/lib/eduflow";
 import { getSessionUser } from "@/lib/session";
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function CourseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: SearchParams;
 }) {
   const { slug } = await params;
+  const query = await searchParams;
   const course = getCourseBySlug(slug);
   if (!course) notFound();
 
@@ -38,15 +49,34 @@ export default async function CourseDetailPage({
   const firstLesson = getFirstLesson(course);
   const reviews = getCourseReviews(course.id);
   const progress = completionForCourse(course, enrollment);
+  const checkoutComplete = valueOf(query.checkout) === "success";
 
   return (
+<<<<<<< HEAD
     <PageShell user={user} className="space-y-8">
+=======
+    <PageShell user={student} className="space-y-8">
+      {checkoutComplete ? (
+        <Panel className="border-emerald-200 bg-emerald-50 text-emerald-950">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={18} />
+            <p className="font-semibold">
+              Enrollment confirmed. You can start the course when you are ready.
+            </p>
+          </div>
+        </Panel>
+      ) : null}
+
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
       <section className="grid overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative min-h-[420px] bg-zinc-950 text-white">
-          <img
+          <Image
             src={course.thumbnailUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-55"
+            fill
+            priority
+            sizes="(min-width: 1024px) 55vw, 100vw"
+            className="object-cover opacity-55"
           />
           <div className="relative flex h-full flex-col justify-end p-6 md:p-10">
             <Badge tone="amber">{category?.name ?? "Course"}</Badge>
@@ -75,7 +105,7 @@ export default async function CourseDetailPage({
             </span>
             <span className="inline-flex items-center gap-2">
               <Users size={16} />
-              {course.reviewCount} reviews
+              {course.reviewCount} {course.reviewCount === 1 ? "review" : "reviews"}
             </span>
             <span className="inline-flex items-center gap-2">
               <Clock size={16} />
@@ -88,9 +118,11 @@ export default async function CourseDetailPage({
           </div>
           <div className="rounded-lg bg-stone-100 p-4 dark:bg-zinc-950">
             <div className="flex items-center gap-3">
-              <img
+              <Image
                 src={instructor.avatarUrl}
                 alt=""
+                width={48}
+                height={48}
                 className="h-12 w-12 rounded-full object-cover"
               />
               <div>
@@ -141,6 +173,24 @@ export default async function CourseDetailPage({
 
       <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-5">
+          <Panel>
+            <div className="flex items-center gap-2">
+              <Target className="text-cyan-700" size={20} />
+              <h2 className="text-xl font-semibold">Learner outcomes</h2>
+            </div>
+            <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-300">
+              Built for {course.audience.toLowerCase()}.
+            </p>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {course.learningOutcomes.map((outcome) => (
+                <li key={outcome} className="flex gap-2 text-sm">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-500" />
+                  <span>{outcome}</span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+
           <Panel>
             <h2 className="text-xl font-semibold">Syllabus</h2>
             <div className="mt-4 space-y-3">
@@ -194,6 +244,29 @@ export default async function CourseDetailPage({
 
         <Panel>
           <h2 className="text-xl font-semibold">What you need</h2>
+          <div className="mt-4 grid gap-3 text-sm">
+            <div className="rounded-md bg-stone-50 p-3 dark:bg-zinc-950">
+              <p className="font-semibold">Skill level</p>
+              <p className="mt-1 text-zinc-600 dark:text-zinc-300">
+                {course.difficulty}
+              </p>
+            </div>
+            <div className="rounded-md bg-stone-50 p-3 dark:bg-zinc-950">
+              <p className="font-semibold">Estimated effort</p>
+              <p className="mt-1 text-zinc-600 dark:text-zinc-300">
+                {course.estimatedWeeklyHours} hours per week
+              </p>
+            </div>
+            {course.certificateEligible ? (
+              <div className="rounded-md bg-emerald-50 p-3 text-emerald-900">
+                <p className="font-semibold">Certificate included</p>
+                <p className="mt-1">
+                  Completion unlocks a public verification page.
+                </p>
+              </div>
+            ) : null}
+          </div>
+          <h3 className="mt-6 text-sm font-semibold">Prerequisites</h3>
           <ul className="mt-4 space-y-3 text-sm text-zinc-600 dark:text-zinc-300">
             {course.prerequisites.map((item) => (
               <li key={item} className="flex gap-2">

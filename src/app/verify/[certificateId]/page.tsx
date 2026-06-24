@@ -91,6 +91,7 @@ export default async function VerifyCertificatePage({
           </div>
           <div className="rounded-lg bg-stone-100 p-5 dark:bg-zinc-950">
             <p className="text-sm text-zinc-600 dark:text-zinc-300">
+<<<<<<< HEAD
               This certificate is verifiable by its unique ID.
               {canDownload
                 ? " Download a PDF copy to share with employers or institutions."
@@ -107,6 +108,20 @@ export default async function VerifyCertificatePage({
                 </ButtonLink>
               </div>
             ) : null}
+=======
+              Download a shareable certificate record for learner portfolios,
+              employer checks, or course completion files.
+            </p>
+            <div className="mt-4">
+              <ButtonLink
+                href={`/api/certificates?studentId=${student.id}&courseId=${course.id}`}
+                variant="secondary"
+              >
+                <Download size={16} />
+                Download record
+              </ButtonLink>
+            </div>
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
           </div>
         </div>
       </Panel>

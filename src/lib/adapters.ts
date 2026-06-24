@@ -10,8 +10,8 @@ export const paymentAdapter = {
     const course = getCourseById(courseId);
     const student = getUser(studentId);
     return {
-      provider: "mock-stripe",
-      checkoutUrl: `/courses/${course?.slug ?? ""}?checkout=mock-success`,
+      provider: "checkout",
+      checkoutUrl: `/courses/${course?.slug ?? ""}?checkout=success`,
       amountCents: course?.priceCents ?? 0,
       customerEmail: student?.email,
       mode: course?.priceCents ? "payment" : "free-enrollment",
@@ -34,9 +34,9 @@ export const emailAdapter = {
 export const storageAdapter = {
   async createUploadUrl(fileName: string) {
     return {
-      provider: "local-dev-storage",
-      uploadUrl: `/uploads/mock/${encodeURIComponent(fileName)}`,
-      publicUrl: `/uploads/mock/${encodeURIComponent(fileName)}`,
+      provider: "submission-storage",
+      uploadUrl: `/uploads/submissions/${encodeURIComponent(fileName)}`,
+      publicUrl: `/uploads/submissions/${encodeURIComponent(fileName)}`,
     };
   },
 };
@@ -44,7 +44,7 @@ export const storageAdapter = {
 export const videoAdapter = {
   playbackUrl(url: string) {
     return {
-      provider: url.includes("youtube") ? "youtube-embed" : "url-video",
+      provider: url.includes("youtube") ? "YouTube" : "Video",
       url,
       qualities: ["720p", "1080p"],
       speeds: [0.5, 1, 1.25, 1.5, 2],

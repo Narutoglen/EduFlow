@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { GraduationCap, KeyRound, Mail, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -17,10 +18,23 @@ const errorMessages: Record<string, string> = {
   missing: "Enter both your email and password to continue.",
   unavailable: "We're having trouble reaching the service right now. Please try again in a moment.",
 };
+=======
+import { CheckCircle2, KeyRound, Mail, ShieldCheck } from "lucide-react";
+import { PageShell, PageTitle } from "@/components/site-shell";
+import { ButtonLink, Panel } from "@/components/ui";
+import { userForRole } from "@/lib/mock-data";
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 
 export default async function LoginPage({
   searchParams,
 }: {
+<<<<<<< HEAD
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const params = await searchParams;
@@ -89,6 +103,40 @@ export default async function LoginPage({
               <input type="hidden" name="next" value={params.next} />
             ) : null}
             <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-200">
+=======
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const notice = valueOf(params.notice);
+  const student = userForRole("STUDENT");
+
+  return (
+    <PageShell user={student}>
+      <PageTitle
+        eyebrow="Authentication"
+        title="Sign in to EduFlow"
+        body="Access your learning dashboard, teaching workspace, support queue, or admin console."
+      />
+
+      {notice ? (
+        <Panel className="mx-auto mb-6 max-w-5xl border-emerald-200 bg-emerald-50 text-emerald-950">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={18} />
+            <p className="font-semibold">
+              {notice === "reset-sent"
+                ? "Password reset instructions are ready to send."
+                : "You are signed in."}
+            </p>
+          </div>
+        </Panel>
+      ) : null}
+
+      <section className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1fr_360px]">
+        <Panel>
+          <form action="/api/auth/session" method="post" className="space-y-4">
+            <input type="hidden" name="intent" value="login" />
+            <label className="block text-sm font-medium">
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
               Email
               <span className="mt-1.5 flex min-h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-brand-100 dark:border-zinc-700 dark:bg-zinc-900 dark:focus-within:ring-brand-950">
                 <Mail size={16} className="text-zinc-400" />
@@ -122,6 +170,7 @@ export default async function LoginPage({
               Sign in
             </Button>
           </form>
+<<<<<<< HEAD
 
           <p className="mt-5 text-center text-sm text-zinc-600 dark:text-zinc-400">
             New to EduFlow?{" "}
@@ -131,6 +180,38 @@ export default async function LoginPage({
             >
               Create an account
             </Link>
+=======
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <ButtonLink href="/api/auth/session?provider=google" variant="secondary">
+              Google SSO
+            </ButtonLink>
+            <ButtonLink href="/auth/reset" variant="secondary">
+              Reset password
+            </ButtonLink>
+          </div>
+        </Panel>
+
+        <Panel>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="text-emerald-600" size={20} />
+            <h2 className="text-xl font-semibold">Quick role access</h2>
+          </div>
+          <div className="mt-4 space-y-3 text-sm">
+            {[
+              ["Student", "/dashboard"],
+              ["Lecturer", "/lecturer"],
+              ["Teaching Assistant", "/ta"],
+              ["Admin", "/admin"],
+            ].map(([label, href]) => (
+              <ButtonLink key={label} href={href} variant="secondary">
+                {label}
+              </ButtonLink>
+            ))}
+          </div>
+          <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">
+            Use a role shortcut to review the experience from a learner,
+            lecturer, teaching assistant, or administrator perspective.
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
           </p>
 
           <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">

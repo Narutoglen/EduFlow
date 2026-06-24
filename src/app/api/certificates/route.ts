@@ -58,8 +58,8 @@ export async function GET(request: Request) {
 
   return new Response(body, {
     headers: {
-      "content-type": "application/pdf",
-      "content-disposition": "attachment; filename=eduflow-certificate.pdf",
+      "content-type": "text/plain; charset=utf-8",
+      "content-disposition": "attachment; filename=eduflow-certificate.txt",
     },
   });
 }

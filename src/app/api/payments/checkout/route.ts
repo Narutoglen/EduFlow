@@ -24,6 +24,7 @@ export async function GET(request: Request) {
   const auth = await requireApiRole(["STUDENT"]);
   if (auth instanceof NextResponse) return auth;
 
+<<<<<<< HEAD
   const courseId = new URL(request.url).searchParams.get("courseId") ?? "";
   const checkout = await checkoutForCourse(courseId, auth.email);
   if (!checkout) {
@@ -33,6 +34,9 @@ export async function GET(request: Request) {
     );
   }
   return NextResponse.json(checkout);
+=======
+  return NextResponse.redirect(new URL(checkout.checkoutUrl, request.url));
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 }
 
 export async function POST(request: Request) {

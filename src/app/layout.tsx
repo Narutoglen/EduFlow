@@ -5,7 +5,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "EduFlow — Learn. Teach. Grow.",
   description:
+<<<<<<< HEAD
     "A role-based learning platform for video courses, quizzes, assignments, discussions, and verifiable certificates.",
+=======
+    "A role-based learning platform for video courses, quizzes, assignments, discussions, and certificates.",
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 };
 
 // Applies the saved (or system) theme before paint to avoid a flash.

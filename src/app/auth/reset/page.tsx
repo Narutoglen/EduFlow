@@ -18,6 +18,7 @@ export default async function ResetPage({
     <PageShell user={user}>
       <PageTitle
         eyebrow="Password reset"
+<<<<<<< HEAD
         title="Reset your password"
         body="Enter your account email and we'll send a secure reset link if a matching account exists."
       />
@@ -57,6 +58,32 @@ export default async function ResetPage({
           </>
         )}
         <div className="mt-5">
+=======
+        title="Send a reset link"
+        body="Enter your account email and EduFlow will send instructions for setting a new password."
+      />
+      <Panel className="mx-auto max-w-xl">
+        <div className="flex items-center gap-2">
+          <MailCheck className="text-cyan-700" size={20} />
+          <h2 className="text-xl font-semibold">Reset password</h2>
+        </div>
+        <form action="/api/auth/session" method="post" className="mt-4 space-y-4">
+          <input type="hidden" name="intent" value="reset" />
+          <label className="block text-sm font-medium">
+            Email address
+            <input
+              className="mt-2 min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
+              name="email"
+              type="email"
+              defaultValue="amina@student.eduflow.test"
+            />
+          </label>
+          <button className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">
+            Email reset link
+          </button>
+        </form>
+        <div className="mt-4">
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
           <ButtonLink href="/auth/login" variant="secondary">
             Back to sign in
           </ButtonLink>

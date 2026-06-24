@@ -39,10 +39,20 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+<<<<<<< HEAD
   // Self-contained server output for Docker/production deployment.
   output: "standalone",
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+=======
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
   },
 };
 

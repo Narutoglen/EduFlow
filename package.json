@@ -18,10 +18,15 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
+<<<<<<< HEAD
     "pg": "^8.21.0",
     "prisma": "^7.8.0",
+=======
+    "prisma": "^6.19.3",
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
     "zod": "^4.2.1"
   },
   "devDependencies": {
@@ -34,6 +39,9 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "postcss": "8.5.15"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

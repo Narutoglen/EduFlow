@@ -1,8 +1,21 @@
+<<<<<<< HEAD
 import { GraduationCap, LayoutDashboard, Trophy } from "lucide-react";
+=======
+import {
+  BookOpen,
+  GraduationCap,
+  LayoutDashboard,
+  LogIn,
+  Moon,
+  ShieldCheck,
+  UsersRound,
+} from "lucide-react";
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { homeForRole } from "@/lib/session";
 import { roleLabel } from "@/lib/eduflow";
+<<<<<<< HEAD
 import type { User } from "@/lib/types";
 import { cn } from "./ui";
 import { HeaderActions } from "./header-actions";
@@ -10,6 +23,35 @@ import { HeaderActions } from "./header-actions";
 export function SiteHeader({ user }: { user?: User }) {
   const dashboardHref = user ? homeForRole(user.role) : "/dashboard";
 
+=======
+import type { Role, User } from "@/lib/types";
+import { ButtonLink, cn } from "./ui";
+
+const roleHome: Record<Role, { href: string; label: string; icon: ReactNode }> = {
+  STUDENT: {
+    href: "/dashboard",
+    label: "My learning",
+    icon: <LayoutDashboard size={16} />,
+  },
+  LECTURER: {
+    href: "/lecturer",
+    label: "Lecturer workspace",
+    icon: <GraduationCap size={16} />,
+  },
+  TA: {
+    href: "/ta",
+    label: "Support queue",
+    icon: <UsersRound size={16} />,
+  },
+  ADMIN: {
+    href: "/admin",
+    label: "Admin console",
+    icon: <ShieldCheck size={16} />,
+  },
+};
+
+function SiteHeader({ user }: { user?: User }) {
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-background/80 backdrop-blur-xl dark:border-zinc-800/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -20,9 +62,35 @@ export function SiteHeader({ user }: { user?: User }) {
             </span>
             <span className="text-lg tracking-tight">EduFlow</span>
           </Link>
+<<<<<<< HEAD
           <nav
             className="hidden items-center gap-1 text-sm md:flex"
             aria-label="Main"
+=======
+          <span className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+            {user ? roleLabel(user.role) : "Learning platform"}
+          </span>
+        </div>
+        <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="Main">
+          <ButtonLink href="/courses" variant="ghost">
+            <BookOpen size={16} />
+            Courses
+          </ButtonLink>
+          {user ? (
+            <ButtonLink href={roleHome[user.role].href} variant="ghost">
+              {roleHome[user.role].icon}
+              {roleHome[user.role].label}
+            </ButtonLink>
+          ) : null}
+          <ButtonLink href="/auth/login" variant="secondary">
+            <LogIn size={16} />
+            Sign in
+          </ButtonLink>
+          <button
+            className="inline-flex min-h-10 items-center justify-center rounded-md px-3 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            title="Dark mode follows your system preference"
+            type="button"
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
           >
             <NavLink href="/courses">Courses</NavLink>
             {user ? (

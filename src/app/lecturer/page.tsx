@@ -2,11 +2,15 @@ import {
   BarChart3,
   CalendarPlus,
   CheckCircle2,
+<<<<<<< HEAD
   ClipboardCheck,
+=======
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
   GripVertical,
   Megaphone,
   Pencil,
   Plus,
+  Send,
 } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import {
@@ -23,6 +27,7 @@ import { getLecturerCourses, getLecturerStats } from "@/lib/lecturer-data";
 import { requireRole } from "@/lib/session";
 import { createAnnouncementAction } from "./actions";
 
+<<<<<<< HEAD
 export default async function LecturerDashboardPage({
   searchParams,
 }: {
@@ -36,6 +41,31 @@ export default async function LecturerDashboardPage({
     getLecturerStats(lecturer.id, courses),
     getLecturerAnnouncements(lecturer.id),
   ]);
+=======
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function valueOf(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function LecturerDashboardPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const params = await searchParams;
+  const isCreatingCourse = valueOf(params.new) === "course";
+  const notice = valueOf(params.notice);
+  const lecturer = userForRole("LECTURER");
+  const courses = getCoursesForLecturer(lecturer.id);
+  const totalEnrollments = enrollments.filter((enrollment) =>
+    courses.some((course) => course.id === enrollment.courseId),
+  );
+  const revenue = totalEnrollments.reduce((total, enrollment) => {
+    const course = courses.find((item) => item.id === enrollment.courseId);
+    return total + (course?.priceCents ?? 0);
+  }, 0);
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
   const notifications = getNotifications(lecturer.id);
 
   return (
@@ -58,11 +88,69 @@ export default async function LecturerDashboardPage({
         }
       />
 
+<<<<<<< HEAD
       {params.created ? (
         <div className="mb-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
           <CheckCircle2 size={16} />
           Course created as a draft. Add modules and lessons, then submit it for review.
         </div>
+=======
+      {notice ? (
+        <Panel className="mb-6 border-emerald-200 bg-emerald-50 text-emerald-950">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={18} />
+            <p className="font-semibold">
+              {notice === "announcement-sent"
+                ? "Announcement queued for enrolled learners."
+                : notice === "session-scheduled"
+                  ? "Live session added to the course calendar."
+                  : "Course plan saved for review."}
+            </p>
+          </div>
+        </Panel>
+      ) : null}
+
+      {isCreatingCourse ? (
+        <Panel className="mb-6">
+          <div className="mb-5 flex items-center gap-2">
+            <Plus className="text-cyan-700" size={20} />
+            <h2 className="text-xl font-semibold">Plan a new course</h2>
+          </div>
+          <form action="/lecturer" className="grid gap-4 md:grid-cols-2">
+            <input type="hidden" name="notice" value="course-saved" />
+            <label className="block text-sm font-medium">
+              Course title
+              <input
+                name="courseTitle"
+                className="mt-2 min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
+                placeholder="Course name"
+              />
+            </label>
+            <label className="block text-sm font-medium">
+              Audience
+              <input
+                name="audience"
+                className="mt-2 min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
+                placeholder="Who should take it?"
+              />
+            </label>
+            <label className="block text-sm font-medium md:col-span-2">
+              Learner outcome
+              <textarea
+                name="outcome"
+                className="mt-2 min-h-24 w-full rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-950"
+                placeholder="What should learners be able to do?"
+              />
+            </label>
+            <div className="md:col-span-2">
+              <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">
+                <CheckCircle2 size={16} />
+                Save course plan
+              </button>
+            </div>
+          </form>
+        </Panel>
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
@@ -72,8 +160,17 @@ export default async function LecturerDashboardPage({
           value={`${stats.enrollmentCount}`}
           detail="Across owned courses"
         />
+<<<<<<< HEAD
         <StatCard label="Revenue" value={formatMoney(stats.revenueCents)} detail="Mock Stripe gross" />
         <StatCard label="To grade" value={`${stats.toGrade}`} detail="Pending submissions" />
+=======
+        <StatCard label="Revenue" value={formatMoney(revenue)} detail="Course sales" />
+        <StatCard
+          label="To grade"
+          value={`${assignmentSubmissions.filter((submission) => submission.status === "SUBMITTED").length}`}
+          detail="Pending submissions"
+        />
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -81,7 +178,7 @@ export default async function LecturerDashboardPage({
           <Panel>
             <div className="mb-5 flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold">Course builder</h2>
-              <Badge tone="blue">Drag handles modeled</Badge>
+              <Badge tone="blue">Structure editor</Badge>
             </div>
             {courses.length === 0 ? (
               <EmptyState
@@ -183,6 +280,7 @@ export default async function LecturerDashboardPage({
               <Megaphone className="text-amber-600" size={20} />
               <h2 className="text-xl font-semibold">Announcements</h2>
             </div>
+<<<<<<< HEAD
             {params.announce === "posted" ? (
               <p className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
                 Announcement posted.
@@ -198,10 +296,27 @@ export default async function LecturerDashboardPage({
                 name="title"
                 required
                 maxLength={140}
+=======
+            <form action="/lecturer" className="mt-4 space-y-3">
+              <input type="hidden" name="notice" value="announcement-sent" />
+              <select
+                name="courseId"
+                className="min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+              >
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {course.title}
+                  </option>
+                ))}
+              </select>
+              <input
+                name="title"
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
                 className="min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
                 placeholder="Announcement title"
               />
               <textarea
+<<<<<<< HEAD
                 name="body"
                 required
                 maxLength={2000}
@@ -225,6 +340,14 @@ export default async function LecturerDashboardPage({
                 type="submit"
                 className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950"
               >
+=======
+                name="message"
+                className="min-h-28 w-full rounded-md border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                placeholder="Message to enrolled learners"
+              />
+              <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">
+                <Send size={16} />
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
                 Post announcement
               </button>
             </form>
@@ -259,8 +382,15 @@ export default async function LecturerDashboardPage({
             <div className="mt-4 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-800">
               <p className="font-semibold">AI critique lab</p>
               <p className="mt-1 text-zinc-600 dark:text-zinc-300">
+<<<<<<< HEAD
                 Scheduled for Thursday · meeting link shared with enrolled learners.
+=======
+                Schedule a live critique session and share the event with enrolled learners.
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
               </p>
+              <ButtonLink href="/lecturer?notice=session-scheduled" variant="secondary">
+                Schedule session
+              </ButtonLink>
             </div>
           </Panel>
 

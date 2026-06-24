@@ -1,4 +1,4 @@
-import { Filter, Search } from "lucide-react";
+import { Award, CheckCircle2, Clock, Filter, Search, Target } from "lucide-react";
 import { CourseCard } from "@/components/course-card";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, EmptyState, Panel } from "@/components/ui";
@@ -31,8 +31,38 @@ export default async function CoursesPage({
       <PageTitle
         eyebrow="Course catalog"
         title="Find the next course to move your work forward"
-        body="Search published courses, filter by topic and level, and enter the learning experience from any enrolled course."
+        body="Compare outcomes, audience fit, effort, skill level, and certificate availability before you start."
       />
+
+      <section className="mb-6 grid gap-4 md:grid-cols-3">
+        <Panel>
+          <div className="flex items-center gap-2">
+            <Target className="text-cyan-700" size={18} />
+            <p className="font-semibold">Outcome-led courses</p>
+          </div>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+            Each course shows the practical skills you should gain.
+          </p>
+        </Panel>
+        <Panel>
+          <div className="flex items-center gap-2">
+            <Clock className="text-amber-600" size={18} />
+            <p className="font-semibold">Clear time commitment</p>
+          </div>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+            Compare total duration and weekly effort before enrolling.
+          </p>
+        </Panel>
+        <Panel>
+          <div className="flex items-center gap-2">
+            <Award className="text-emerald-600" size={18} />
+            <p className="font-semibold">Verifiable certificates</p>
+          </div>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+            Completed eligible courses link to public verification.
+          </p>
+        </Panel>
+      </section>
 
       <Panel className="mb-6">
         <form className="grid gap-3 md:grid-cols-[1fr_180px_180px_150px_150px_auto]">
@@ -93,7 +123,17 @@ export default async function CoursesPage({
       </Panel>
 
       <div className="mb-5 flex items-center justify-between">
-        <Badge tone="green">{courses.length} matching courses</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="green">
+            <CheckCircle2 size={14} />
+            {courses.length} matching courses
+          </Badge>
+          {(q || category || difficulty || price || sort) ? (
+            <ButtonLink href="/courses" variant="secondary">
+              Reset filters
+            </ButtonLink>
+          ) : null}
+        </div>
         <ButtonLink href="/dashboard" variant="secondary">
           My learning
         </ButtonLink>
@@ -108,7 +148,7 @@ export default async function CoursesPage({
       ) : (
         <EmptyState
           title="No courses matched"
-          body="Clear a filter or search for another topic in the catalog."
+          body="Reset the filters or try a broader topic such as AI, data, or assessment."
         />
       )}
     </PageShell>

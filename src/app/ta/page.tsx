@@ -1,4 +1,10 @@
-import { MessageSquare, NotebookPen, UsersRound } from "lucide-react";
+import {
+  CheckCircle2,
+  MessageSquare,
+  NotebookPen,
+  Send,
+  UsersRound,
+} from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, ProgressBar, StatCard } from "@/components/ui";
 import {

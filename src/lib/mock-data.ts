@@ -87,8 +87,16 @@ export const courses: Course[] = [
     difficulty: "Intermediate",
     priceCents: 7900,
     rating: 4.8,
-    reviewCount: 128,
+    reviewCount: 2,
     durationHours: 8.5,
+    estimatedWeeklyHours: 3,
+    audience: "Teachers, lecturers, and curriculum teams adopting AI safely",
+    learningOutcomes: [
+      "Design reviewed AI feedback workflows",
+      "Write classroom-ready prompts for explanations and examples",
+      "Set learner safeguards for responsible AI use",
+    ],
+    certificateEligible: true,
     prerequisites: ["Basic lesson planning", "Comfort using browser-based tools"],
     tags: ["AI", "Assessment", "Instructional design"],
     lecturerId: "usr-lecturer",
@@ -112,8 +120,8 @@ export const courses: Course[] = [
             order: 1,
             forumThreadId: "thread-ai-1",
             resources: [
-              { id: "res-ai-1", title: "AI classroom checklist", type: "pdf", url: "#" },
-              { id: "res-ai-2", title: "Prompt bank", type: "slides", url: "#" },
+              { id: "res-ai-1", title: "AI classroom checklist", type: "pdf", url: "/api/resources/res-ai-1" },
+              { id: "res-ai-2", title: "Prompt bank", type: "slides", url: "/api/resources/res-ai-2" },
             ],
           },
           {
@@ -126,7 +134,7 @@ export const courses: Course[] = [
             order: 2,
             forumThreadId: "thread-ai-2",
             resources: [
-              { id: "res-ai-3", title: "Differentiation prompts", type: "link", url: "#" },
+              { id: "res-ai-3", title: "Differentiation prompts", type: "link", url: "/api/resources/res-ai-3" },
             ],
           },
         ],
@@ -146,8 +154,8 @@ export const courses: Course[] = [
             order: 3,
             forumThreadId: "thread-ai-3",
             resources: [
-              { id: "res-ai-4", title: "Rubric worksheet", type: "pdf", url: "#" },
-              { id: "res-ai-5", title: "Sample grading guide", type: "code", url: "#" },
+              { id: "res-ai-4", title: "Rubric worksheet", type: "pdf", url: "/api/resources/res-ai-4" },
+              { id: "res-ai-5", title: "Sample grading guide", type: "code", url: "/api/resources/res-ai-5" },
             ],
           },
         ],
@@ -212,9 +220,17 @@ export const courses: Course[] = [
     categoryId: "cat-ai",
     difficulty: "Beginner",
     priceCents: 0,
-    rating: 4.6,
-    reviewCount: 87,
+    rating: 5,
+    reviewCount: 1,
     durationHours: 5,
+    estimatedWeeklyHours: 2,
+    audience: "School leaders, analysts, and teachers building practical dashboards",
+    learningOutcomes: [
+      "Read school data without overclaiming",
+      "Build an intervention dashboard structure",
+      "Add privacy notes to learner support workflows",
+    ],
+    certificateEligible: true,
     prerequisites: ["Spreadsheet basics"],
     tags: ["Dashboards", "Ethics", "School operations"],
     lecturerId: "usr-lecturer",
@@ -238,7 +254,7 @@ export const courses: Course[] = [
             order: 1,
             forumThreadId: "thread-data-1",
             resources: [
-              { id: "res-data-1", title: "Data ethics canvas", type: "pdf", url: "#" },
+              { id: "res-data-1", title: "Data ethics canvas", type: "pdf", url: "/api/resources/res-data-1" },
             ],
           },
           {
@@ -251,7 +267,7 @@ export const courses: Course[] = [
             order: 2,
             forumThreadId: "thread-data-2",
             resources: [
-              { id: "res-data-2", title: "Dashboard template", type: "slides", url: "#" },
+              { id: "res-data-2", title: "Dashboard template", type: "slides", url: "/api/resources/res-data-2" },
             ],
           },
         ],
@@ -307,6 +323,14 @@ export const courses: Course[] = [
     rating: 0,
     reviewCount: 0,
     durationHours: 6,
+    estimatedWeeklyHours: 3,
+    audience: "Lecturers and learning designers improving assessment products",
+    learningOutcomes: [
+      "Reduce scoring ambiguity in assessments",
+      "Write clearer rubric criteria",
+      "Review learner-facing assessment flows",
+    ],
+    certificateEligible: true,
     prerequisites: ["Assessment design experience"],
     tags: ["UX", "Assessment", "Accessibility"],
     lecturerId: "usr-lecturer",
@@ -443,6 +467,13 @@ export const discussions: DiscussionPost[] = [
 ];
 
 export const reviews: Review[] = [
+  {
+    id: "review-ai-2",
+    courseId: "course-ai-teaching",
+    studentId: "usr-student",
+    rating: 5,
+    body: "The review checkpoints helped me see where AI should support, not decide, classroom feedback.",
+  },
   {
     id: "review-ai-1",
     courseId: "course-ai-teaching",

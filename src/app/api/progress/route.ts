@@ -4,14 +4,19 @@ import { recordLessonProgress } from "@/lib/assessments";
 
 // Personal notes export — requires a signed-in student (it is their own data).
 export async function GET(request: Request) {
+<<<<<<< HEAD
   const auth = await requireApiRole(["STUDENT"]);
   if (auth instanceof NextResponse) return auth;
 
   if (new URL(request.url).searchParams.get("export") === "notes") {
+=======
+  const url = new URL(request.url);
+  if (url.searchParams.get("export") === "notes") {
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
     return new Response("EduFlow lesson notes\n", {
       headers: {
-        "content-type": "application/pdf",
-        "content-disposition": "attachment; filename=eduflow-notes.pdf",
+        "content-type": "text/plain; charset=utf-8",
+        "content-disposition": "attachment; filename=eduflow-notes.txt",
       },
     });
   }
@@ -21,8 +26,24 @@ export async function GET(request: Request) {
 // Mark a lesson complete. The student comes from the session; progress is only
 // recorded when they are enrolled in the lesson's course.
 export async function POST(request: Request) {
+<<<<<<< HEAD
   const auth = await requireApiRole(["STUDENT"]);
   if (auth instanceof NextResponse) return auth;
+=======
+  const contentType = request.headers.get("content-type") ?? "";
+  const payload = contentType.includes("application/json")
+    ? await request.json()
+    : Object.fromEntries((await request.formData()).entries());
+  const courseId = String(payload.courseId ?? "");
+  const lessonId = String(payload.lessonId ?? "");
+  const returnTo = String(
+    payload.returnTo ?? `/learn/${courseId}/${lessonId}?notice=progress-saved`,
+  );
+
+  if (!contentType.includes("application/json")) {
+    return NextResponse.redirect(new URL(returnTo, request.url), 303);
+  }
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 
   const contentType = request.headers.get("content-type") ?? "";
   const isForm = !contentType.includes("application/json");
