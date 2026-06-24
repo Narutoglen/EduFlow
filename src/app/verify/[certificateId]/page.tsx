@@ -2,27 +2,42 @@ import { notFound } from "next/navigation";
 import { Award, CheckCircle2, Download } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel } from "@/components/ui";
-import { getCertificate, getCourseById, getInstructor, getUser } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import { canGradeCourseId } from "@/lib/authz";
+import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/session";
 
+// Public certificate verification. Anyone with the verification id can confirm a
+// certificate is genuine (learner, course, lecturer, date), but the downloadable
+// PDF is offered only to the certificate owner or teaching staff — the API
+// enforces that regardless of what the page renders.
 export default async function VerifyCertificatePage({
   params,
 }: {
   params: Promise<{ certificateId: string }>;
 }) {
   const { certificateId } = await params;
-  const certificate = getCertificate(certificateId);
+
+  const certificate = await prisma.certificate.findUnique({
+    where: { verificationId: certificateId },
+    select: {
+      verificationId: true,
+      issuedAt: true,
+      studentId: true,
+      courseId: true,
+      student: { select: { name: true } },
+      course: { select: { title: true, lecturer: { select: { name: true } } } },
+    },
+  });
   if (!certificate) notFound();
 
-  const course = getCourseById(certificate.courseId);
-  const student = getUser(certificate.studentId);
-  if (!course || !student) notFound();
-
-  const lecturer = getInstructor(course);
-  const viewer = userForRole("STUDENT");
+  const viewer = await getSessionUser();
+  const canDownload = viewer
+    ? viewer.id === certificate.studentId ||
+      (await canGradeCourseId(viewer, certificate.courseId))
+    : false;
 
   return (
-    <PageShell user={viewer}>
+    <PageShell user={viewer ?? undefined}>
       <PageTitle
         eyebrow="Certificate verification"
         title="Verified EduFlow certificate"
@@ -38,7 +53,7 @@ export default async function VerifyCertificatePage({
                 Certificate of completion
               </p>
               <h2 className="text-3xl font-semibold tracking-normal">
-                {course.title}
+                {certificate.course.title}
               </h2>
             </div>
           </div>
@@ -52,15 +67,21 @@ export default async function VerifyCertificatePage({
             <dl className="mt-6 grid gap-4 sm:grid-cols-2">
               <div>
                 <dt className="text-sm text-zinc-500">Student</dt>
-                <dd className="font-semibold">{student.name}</dd>
+                <dd className="font-semibold">{certificate.student.name}</dd>
               </div>
               <div>
                 <dt className="text-sm text-zinc-500">Lecturer</dt>
-                <dd className="font-semibold">{lecturer.name}</dd>
+                <dd className="font-semibold">{certificate.course.lecturer.name}</dd>
               </div>
               <div>
                 <dt className="text-sm text-zinc-500">Completed</dt>
-                <dd className="font-semibold">{certificate.issuedAt}</dd>
+                <dd className="font-semibold">
+                  {certificate.issuedAt.toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </dd>
               </div>
               <div>
                 <dt className="text-sm text-zinc-500">Verification ID</dt>
@@ -70,18 +91,22 @@ export default async function VerifyCertificatePage({
           </div>
           <div className="rounded-lg bg-stone-100 p-5 dark:bg-zinc-950">
             <p className="text-sm text-zinc-600 dark:text-zinc-300">
-              Download generation is served by the certificate adapter in local
-              development and can be replaced with a production PDF renderer.
+              This certificate is verifiable by its unique ID.
+              {canDownload
+                ? " Download a PDF copy to share with employers or institutions."
+                : " Sign in as the certificate holder to download a PDF copy."}
             </p>
-            <div className="mt-4">
-              <ButtonLink
-                href={`/api/certificates?studentId=${student.id}&courseId=${course.id}`}
-                variant="secondary"
-              >
-                <Download size={16} />
-                Download PDF
-              </ButtonLink>
-            </div>
+            {canDownload ? (
+              <div className="mt-4">
+                <ButtonLink
+                  href={`/api/certificates?verificationId=${encodeURIComponent(certificate.verificationId)}`}
+                  variant="secondary"
+                >
+                  <Download size={16} />
+                  Download PDF
+                </ButtonLink>
+              </div>
+            ) : null}
           </div>
         </div>
       </Panel>

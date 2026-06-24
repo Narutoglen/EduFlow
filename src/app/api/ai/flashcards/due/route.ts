@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { callAiService } from "@/lib/ai-client";
-import { getCurrentPrincipal } from "@/lib/ai-session";
+import { requireAiPrincipal } from "@/lib/ai-session";
 
 // BFF: due cards for a study session (contract §3).
 export async function GET(request: Request) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const url = new URL(request.url);
   const lessonId = url.searchParams.get("lessonId");
   const limit = url.searchParams.get("limit") ?? "20";
@@ -13,7 +15,7 @@ export async function GET(request: Request) {
   const { status, data } = await callAiService<unknown>({
     method: "GET",
     path: `/api/v1/ai/flashcards/due?lessonId=${encodeURIComponent(lessonId)}&limit=${encodeURIComponent(limit)}`,
-    principal: getCurrentPrincipal(),
+    principal,
   });
   return NextResponse.json(data, { status });
 }

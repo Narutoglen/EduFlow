@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { clsx } from "clsx";
 
 export function cn(...values: Parameters<typeof clsx>) {
@@ -11,21 +11,27 @@ export function Badge({
   tone = "neutral",
 }: {
   children: ReactNode;
-  tone?: "neutral" | "green" | "blue" | "amber" | "red" | "violet";
+  tone?: "neutral" | "green" | "blue" | "amber" | "red" | "violet" | "brand";
 }) {
   const tones = {
-    neutral: "border-zinc-200 bg-white text-zinc-700",
-    green: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    blue: "border-cyan-200 bg-cyan-50 text-cyan-800",
-    amber: "border-amber-200 bg-amber-50 text-amber-900",
-    red: "border-rose-200 bg-rose-50 text-rose-800",
-    violet: "border-violet-200 bg-violet-50 text-violet-800",
+    neutral:
+      "border-zinc-200 bg-white text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200",
+    green:
+      "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300",
+    blue: "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/50 dark:text-sky-300",
+    amber:
+      "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/50 dark:text-amber-300",
+    red: "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300",
+    violet:
+      "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900/60 dark:bg-violet-950/50 dark:text-violet-300",
+    brand:
+      "border-brand-200 bg-brand-50 text-brand-700 dark:border-brand-900/60 dark:bg-brand-950/40 dark:text-brand-300",
   };
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-semibold",
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold",
         tones[tone],
       )}
     >
@@ -34,33 +40,52 @@ export function Badge({
   );
 }
 
+const buttonVariants = {
+  primary:
+    "bg-brand-600 text-white shadow-sm shadow-brand-600/20 hover:bg-brand-500 dark:bg-brand-500 dark:hover:bg-brand-400",
+  secondary:
+    "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800",
+  ghost:
+    "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white",
+} as const;
+
+const buttonBase =
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-60";
+
 export function ButtonLink({
   href,
   children,
   variant = "primary",
+  className,
 }: {
   href: string;
   children: ReactNode;
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: keyof typeof buttonVariants;
+  className?: string;
 }) {
-  const variants = {
-    primary:
-      "bg-zinc-950 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950",
-    secondary:
-      "border border-zinc-200 bg-white text-zinc-950 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white",
-    ghost: "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800",
-  };
-
   return (
-    <Link
-      href={href}
-      className={cn(
-        "inline-flex min-h-10 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition",
-        variants[variant],
-      )}
-    >
+    <Link href={href} className={cn(buttonBase, buttonVariants[variant], className)}>
       {children}
     </Link>
+  );
+}
+
+export function Button({
+  children,
+  variant = "primary",
+  className,
+  ...props
+}: {
+  children: ReactNode;
+  variant?: keyof typeof buttonVariants;
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={cn(buttonBase, buttonVariants[variant], className)}
+      {...props}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -74,7 +99,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        "rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900",
+        "rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm shadow-zinc-900/5 dark:border-zinc-800 dark:bg-zinc-900/70",
         className,
       )}
     >
@@ -87,20 +112,29 @@ export function StatCard({
   label,
   value,
   detail,
+  icon,
 }: {
   label: string;
   value: string;
   detail: string;
+  icon?: ReactNode;
 }) {
   return (
-    <Panel>
-      <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-        {label}
-      </p>
-      <p className="mt-3 text-3xl font-semibold tracking-normal text-zinc-950 dark:text-white">
+    <Panel className="p-5">
+      <div className="flex items-start justify-between">
+        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          {label}
+        </p>
+        {icon ? (
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-300">
+            {icon}
+          </span>
+        ) : null}
+      </div>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">
         {value}
       </p>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{detail}</p>
+      <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">{detail}</p>
     </Panel>
   );
 }
@@ -109,7 +143,7 @@ export function ProgressBar({ value }: { value: number }) {
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
       <div
-        className="h-full rounded-full bg-emerald-500"
+        className="h-full rounded-full bg-gradient-to-r from-brand-500 to-violet-500 transition-all"
         style={{ width: `${Math.max(0, Math.min(value, 100))}%` }}
       />
     </div>
@@ -119,16 +153,21 @@ export function ProgressBar({ value }: { value: number }) {
 export function EmptyState({
   title,
   body,
+  action,
 }: {
   title: string;
   body: string;
+  action?: ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-dashed border-zinc-300 bg-white/60 p-10 text-center dark:border-zinc-700 dark:bg-zinc-900/40">
       <h3 className="text-base font-semibold text-zinc-950 dark:text-white">
         {title}
       </h3>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{body}</p>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">
+        {body}
+      </p>
+      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );
 }

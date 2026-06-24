@@ -1,18 +1,40 @@
 import { Check, DollarSign, Settings, ShieldAlert, UserCog, X } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
-import { Badge, ButtonLink, Panel, ProgressBar, StatCard } from "@/components/ui";
-import {
-  formatMoney,
-  getCoursesByStatus,
-  platformStats,
-  roleLabel,
-} from "@/lib/eduflow";
-import { categories, courses, enrollments, userForRole, users } from "@/lib/mock-data";
+import { Badge, ButtonLink, EmptyState, Panel, ProgressBar, StatCard } from "@/components/ui";
+import { formatMoney, platformStats, roleLabel } from "@/lib/eduflow";
+import { categories, courses, enrollments } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
+import { approveCourseAction, rejectCourseAction } from "./actions";
 
-export default function AdminDashboardPage() {
-  const admin = userForRole("ADMIN");
+const reviewMessages: Record<string, { tone: "ok" | "error"; text: string }> = {
+  approved: { tone: "ok", text: "Course approved and published." },
+  rejected: { tone: "ok", text: "Course rejected and removed from the queue." },
+  missing: { tone: "error", text: "That course no longer exists." },
+  invalid: { tone: "error", text: "Something went wrong — no course was selected." },
+};
+
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ review?: string }>;
+}) {
+  const admin = await requireRole(["ADMIN"]);
+  const params = await searchParams;
+  const review = params.review ? reviewMessages[params.review] : undefined;
   const stats = platformStats();
-  const pending = getCoursesByStatus("PENDING_REVIEW");
+
+  // Course queue + counts come from Postgres so approve/reject take effect live.
+  // Real accounts from the database — seeded + self-registered users.
+  const [dbUsers, pending, publishedCount] = await Promise.all([
+    prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.course.findMany({
+      where: { status: "PENDING_REVIEW" },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, slug: true, title: true, description: true, status: true },
+    }),
+    prisma.course.count({ where: { status: "PUBLISHED" } }),
+  ]);
 
   return (
     <PageShell user={admin}>
@@ -22,11 +44,23 @@ export default function AdminDashboardPage() {
         body="Approve courses, manage roles, monitor platform analytics, feature categories, and configure global service settings."
       />
 
+      {review ? (
+        <div
+          className={
+            review.tone === "ok"
+              ? "mb-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+              : "mb-6 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+          }
+        >
+          {review.text}
+        </div>
+      ) : null}
+
       <section className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Active users" value={`${users.length}`} detail="All seeded accounts" />
-        <StatCard label="Active courses" value={`${stats.publishedCourses}`} detail="Published catalog" />
+        <StatCard label="Active users" value={`${dbUsers.length}`} detail="Registered accounts (live DB)" />
+        <StatCard label="Active courses" value={`${publishedCount}`} detail="Published catalog" />
         <StatCard label="Revenue" value={formatMoney(stats.monthlyRevenue)} detail="Mock monthly Stripe" />
-        <StatCard label="Pending" value={`${stats.pendingApprovals}`} detail="Course approvals" />
+        <StatCard label="Pending" value={`${pending.length}`} detail="Course approvals" />
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -36,36 +70,53 @@ export default function AdminDashboardPage() {
               <ShieldAlert className="text-amber-600" size={20} />
               <h2 className="text-xl font-semibold">Course approval queue</h2>
             </div>
-            <div className="space-y-4">
-              {pending.map((course) => (
-                <div key={course.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold">{course.title}</p>
-                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                        {course.description}
-                      </p>
+            {pending.length === 0 ? (
+              <EmptyState
+                title="Queue is clear"
+                body="No courses are awaiting review right now. Submitted courses will appear here for approval."
+              />
+            ) : (
+              <div className="space-y-4">
+                {pending.map((course) => (
+                  <div key={course.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">{course.title}</p>
+                        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                          {course.description}
+                        </p>
+                      </div>
+                      <Badge tone="amber">{course.status.replace("_", " ")}</Badge>
                     </div>
-                    <Badge tone="amber">{course.status.replace("_", " ")}</Badge>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <ButtonLink href={`/courses/${course.slug}`} variant="secondary">
+                        Preview
+                      </ButtonLink>
+                      <form action={approveCourseAction}>
+                        <input type="hidden" name="courseId" value={course.id} />
+                        <button
+                          type="submit"
+                          className="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                        >
+                          <Check size={16} />
+                          Approve
+                        </button>
+                      </form>
+                      <form action={rejectCourseAction}>
+                        <input type="hidden" name="courseId" value={course.id} />
+                        <button
+                          type="submit"
+                          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-rose-200 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                        >
+                          <X size={16} />
+                          Reject
+                        </button>
+                      </form>
+                    </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <ButtonLink href={`/courses/${course.slug}`} variant="secondary">
-                      Preview
-                    </ButtonLink>
-                    <form action="/api/enrollments" method="post">
-                      <button className="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white">
-                        <Check size={16} />
-                        Approve
-                      </button>
-                    </form>
-                    <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-rose-200 px-4 text-sm font-semibold text-rose-700">
-                      <X size={16} />
-                      Reject
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </Panel>
 
           <Panel>
@@ -83,11 +134,19 @@ export default function AdminDashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {users.map((user) => (
+                  {dbUsers.map((user) => (
                     <tr key={user.id}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <img src={user.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={
+                              user.avatarUrl ??
+                              "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=80&q=80"
+                            }
+                            alt=""
+                            className="h-9 w-9 rounded-full object-cover"
+                          />
                           <div>
                             <p className="font-semibold">{user.name}</p>
                             <p className="text-zinc-500">{user.email}</p>
@@ -150,7 +209,7 @@ export default function AdminDashboardPage() {
               <h2 className="text-xl font-semibold">Global settings</h2>
             </div>
             <div className="mt-4 space-y-3 text-sm">
-              {["Payment gateway: mock Stripe", "SSO: Google OAuth env-gated", "Email: console adapter", "Storage limit: local dev"].map((item) => (
+              {["Payment gateway: Stripe", "SSO: Google OAuth", "Email: transactional provider", "Default storage: 5 GB / course"].map((item) => (
                 <div key={item} className="rounded-lg bg-stone-50 p-3 dark:bg-zinc-950">
                   {item}
                 </div>

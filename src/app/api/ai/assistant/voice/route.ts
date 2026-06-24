@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { forwardMultipart } from "@/lib/ai-client";
-import { getCurrentPrincipal } from "@/lib/ai-session";
+import { requireAiPrincipal } from "@/lib/ai-session";
 
 // BFF: forward recorded audio to ai-service (multipart). ai-service validates type/size, stores to a
 // shared volume, and enqueues transcription (audio purged after). No secrets reach the browser.
@@ -12,7 +12,8 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const principal = getCurrentPrincipal();
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const { status, data } = await forwardMultipart<unknown>(
     "/api/v1/ai/assistant/voice",
     form,

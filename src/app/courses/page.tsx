@@ -2,8 +2,9 @@ import { Filter, Search } from "lucide-react";
 import { CourseCard } from "@/components/course-card";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, EmptyState, Panel } from "@/components/ui";
-import { categories, userForRole } from "@/lib/mock-data";
+import { categories } from "@/lib/mock-data";
 import { filterCourses } from "@/lib/eduflow";
+import { getSessionUser } from "@/lib/session";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -23,10 +24,10 @@ export default async function CoursesPage({
   const price = valueOf(params.price) as "free" | "paid" | undefined;
   const sort = valueOf(params.sort) as "rating" | "duration" | "price" | undefined;
   const courses = filterCourses({ q, category, difficulty, price, sort });
-  const student = userForRole("STUDENT");
+  const user = (await getSessionUser()) ?? undefined;
 
   return (
-    <PageShell user={student}>
+    <PageShell user={user}>
       <PageTitle
         eyebrow="Course catalog"
         title="Find the next course to move your work forward"

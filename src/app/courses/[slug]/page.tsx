@@ -20,7 +20,7 @@ import {
   getFirstLesson,
   getInstructor,
 } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import { getSessionUser } from "@/lib/session";
 
 export default async function CourseDetailPage({
   params,
@@ -31,16 +31,16 @@ export default async function CourseDetailPage({
   const course = getCourseBySlug(slug);
   if (!course) notFound();
 
-  const student = userForRole("STUDENT");
+  const user = (await getSessionUser()) ?? undefined;
   const instructor = getInstructor(course);
   const category = getCategory(course.categoryId);
-  const enrollment = getEnrollment(student.id, course.id);
+  const enrollment = user ? getEnrollment(user.id, course.id) : undefined;
   const firstLesson = getFirstLesson(course);
   const reviews = getCourseReviews(course.id);
   const progress = completionForCourse(course, enrollment);
 
   return (
-    <PageShell user={student} className="space-y-8">
+    <PageShell user={user} className="space-y-8">
       <section className="grid overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative min-h-[420px] bg-zinc-950 text-white">
           <img

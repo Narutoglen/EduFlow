@@ -1,31 +1,46 @@
 import { NextResponse } from "next/server";
-import { courses, userForRole } from "@/lib/mock-data";
-import { storageAdapter } from "@/lib/adapters";
+import { requireApiRole } from "@/lib/api-auth";
+import { recordAssignmentSubmission } from "@/lib/assessments";
 
+// Submit an assignment. The student is taken from the session and the write is
+// gated by enrollment, so a tampered assignmentId cannot attach work to another
+// course or another learner.
 export async function POST(request: Request) {
-  const contentType = request.headers.get("content-type") ?? "";
-  const payload = contentType.includes("application/json")
-    ? await request.json()
-    : Object.fromEntries((await request.formData()).entries());
-  const assignmentId = String(payload.assignmentId ?? "");
-  const assignment = courses
-    .flatMap((course) => course.assignments)
-    .find((item) => item.id === assignmentId);
+  const auth = await requireApiRole(["STUDENT"]);
+  if (auth instanceof NextResponse) return auth;
 
-  if (!assignment) {
-    return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
+  const contentType = request.headers.get("content-type") ?? "";
+  const isForm = !contentType.includes("application/json");
+  const payload = isForm
+    ? Object.fromEntries((await request.formData()).entries())
+    : await request.json().catch(() => ({}));
+
+  const assignmentId = String(payload.assignmentId ?? "");
+  const body = String(payload.body ?? "");
+  if (!assignmentId) {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "assignmentId is required." } },
+      { status: 400 },
+    );
   }
 
-  const upload = await storageAdapter.createUploadUrl(`${assignmentId}.txt`);
+  const result = await recordAssignmentSubmission({ studentId: auth.id, assignmentId, body });
+
+  if (!result.ok) {
+    if (isForm) {
+      return NextResponse.redirect(new URL("/achievements?flash=assignment-error", request.url), 303);
+    }
+    return NextResponse.json({ error: { code: "FORBIDDEN", message: result.error } }, {
+      status: result.status,
+    });
+  }
+
+  if (isForm) {
+    return NextResponse.redirect(new URL("/achievements?flash=assignment-submitted", request.url), 303);
+  }
+
   return NextResponse.json(
-    {
-      id: `mock-submission-${assignmentId}`,
-      assignmentId,
-      studentId: userForRole("STUDENT").id,
-      status: "SUBMITTED",
-      upload,
-      submittedText: String(payload.body ?? ""),
-    },
+    { id: result.data.submissionId, assignmentId, status: result.data.status },
     { status: 201 },
   );
 }

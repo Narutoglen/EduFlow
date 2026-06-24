@@ -26,7 +26,7 @@ import {
   getPreviousLesson,
   getQuizForLesson,
 } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import { requireUser } from "@/lib/session";
 import { videoAdapter } from "@/lib/adapters";
 
 export default async function LearnPage({
@@ -38,7 +38,7 @@ export default async function LearnPage({
   const course = getCourseById(courseId);
   if (!course) notFound();
 
-  const student = userForRole("STUDENT");
+  const student = await requireUser(`/learn/${courseId}/${lessonId}`);
   const enrollment = getEnrollment(student.id, course.id);
   const lesson = getLessons(course).find((item) => item.id === lessonId);
   if (!lesson) notFound();
@@ -56,10 +56,10 @@ export default async function LearnPage({
     <PageShell user={student} className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-normal text-cyan-700 dark:text-cyan-300">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
             {course.title}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-normal dark:text-white">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight dark:text-white">
             {lesson.title}
           </h1>
         </div>

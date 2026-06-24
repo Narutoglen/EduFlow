@@ -7,10 +7,11 @@ import {
   getLessonDiscussions,
   getLessons,
 } from "@/lib/eduflow";
-import { assignmentSubmissions, enrollments, userForRole, users } from "@/lib/mock-data";
+import { assignmentSubmissions, enrollments, users } from "@/lib/mock-data";
+import { requireRole } from "@/lib/session";
 
-export default function TaDashboardPage() {
-  const ta = userForRole("TA");
+export default async function TaDashboardPage() {
+  const ta = await requireRole(["TA"]);
   const courses = getCoursesForTa(ta.id);
   const courseIds = new Set(courses.map((course) => course.id));
   const roster = enrollments.filter((enrollment) => courseIds.has(enrollment.courseId));
@@ -24,6 +25,12 @@ export default function TaDashboardPage() {
         eyebrow="Teaching assistant"
         title="Support learners without editing course content"
         body="Review assigned course rosters, respond to forum questions, and grade submissions delegated by lecturers."
+        action={
+          <ButtonLink href="/lecturer/grading">
+            <NotebookPen size={16} />
+            Open grading queue
+          </ButtonLink>
+        }
       />
 
       <section className="grid gap-4 md:grid-cols-4">
@@ -91,7 +98,7 @@ export default function TaDashboardPage() {
                   <p className="mt-2 text-zinc-600 dark:text-zinc-300">
                     {submission.feedback ?? "Ready for written feedback."}
                   </p>
-                  <ButtonLink href="/ta?grade=submission" variant="secondary">
+                  <ButtonLink href="/lecturer/grading" variant="secondary">
                     Grade
                   </ButtonLink>
                 </div>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { callAiService } from "@/lib/ai-client";
-import { getCourseLessons, getCurrentPrincipal } from "@/lib/ai-session";
+import { getCourseLessons, requireAiPrincipal } from "@/lib/ai-session";
 
 // BFF: ensure a course's lessons are embedded for RAG. Resolves lesson text (LMS-owned) and sends
 // each lesson to ai-service ingest — no server-side URL fetch, so no SSRF surface here. Idempotent.
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
   if (lessons.length === 0) {
     return NextResponse.json({ error: { code: "NOT_FOUND", message: "Course not found" } }, { status: 404 });
   }
-  const principal = getCurrentPrincipal();
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const results = await Promise.all(
     lessons.map((l) =>
       callAiService<{ jobId?: string }>({
