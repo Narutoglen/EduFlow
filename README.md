@@ -1,17 +1,10 @@
 # EduFlow
 
-<<<<<<< HEAD
 EduFlow is a full-stack Next.js LMS with role dashboards for Students,
 Lecturers, Teaching Assistants, and Admins. It runs on a **real PostgreSQL
 database** with **real authentication** — accounts, scrypt-hashed passwords,
 and signed session cookies — plus seeded catalog content for the courses,
 quizzes, assignments, and certificates.
-=======
-EduFlow is a full-stack Next.js learning platform with role dashboards for
-Students, Lecturers, Teaching Assistants, and Admins. It runs locally without
-external credentials by using seeded in-memory data and replaceable service
-integrations.
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 
 ## What is included
 
@@ -63,13 +56,8 @@ npm run prisma:seed
 
 ## Database setup
 
-<<<<<<< HEAD
 `.env` is configured for the Docker Postgres above. To point at a different
 database, edit `DATABASE_URL` in `.env`:
-=======
-Copy `.env.example` to `.env` and set `DATABASE_URL` when you want to use
-PostgreSQL and Prisma instead of the local seeded data.
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 
 ```bash
 DATABASE_URL="postgresql://eduflow:<password>@localhost:5432/eduflow?schema=public"
@@ -84,7 +72,6 @@ These accounts are created in the database by `npm run prisma:seed`. Sign in at
 [`/auth/login`](http://localhost:3000/auth/login) — each lands on its own role
 workspace.
 
-<<<<<<< HEAD
 | Role              | Email                          | Password       |
 | ----------------- | ------------------------------ | -------------- |
 | Student           | `amina@student.eduflow.test`   | `Student123!`  |
@@ -96,7 +83,3 @@ You can also self-register a new learner account at `/auth/register`.
 
 Authentication is real: passwords are scrypt-hashed in Postgres, sessions are
 signed HttpOnly cookies, and every role route is guarded server-side.
-=======
-The local auth pages expose the intended flows while avoiding real OAuth,
-email, and credential setup during local review.
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
