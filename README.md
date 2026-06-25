@@ -23,7 +23,17 @@ courses, and replaceable service integrations.
 
 ## Run locally
 
+EduFlow needs a Postgres database. The quickest path uses Docker:
+
 ```bash
+# 1. Start Postgres (published on localhost:5432)
+docker run -d --name eduflow-db \
+  -e POSTGRES_USER=eduflow \
+  -e POSTGRES_PASSWORD=MpzKHkylmLWFIGqH39GlloUC \
+  -e POSTGRES_DB=eduflow \
+  -p 5432:5432 postgres:16-alpine
+
+# 2. Install deps, create tables, seed demo accounts
 npm install
 docker compose up -d postgres
 npm run prisma:generate
@@ -32,7 +42,11 @@ npm run prisma:seed
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). `.env` already contains a
+working `DATABASE_URL` and `SESSION_SECRET` for local development.
+
+If you restart the database container, re-run `npm run prisma:push` and
+`npm run prisma:seed`.
 
 ## Useful scripts
 

@@ -2,8 +2,14 @@ import { Award, CheckCircle2, Clock, Filter, Search, Target } from "lucide-react
 import { CourseCard } from "@/components/course-card";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, EmptyState, Panel } from "@/components/ui";
+<<<<<<< HEAD
 import { filterCoursesFromDb, getCategoriesFromDb } from "@/lib/course-data";
 import { getCurrentUser } from "@/lib/session";
+=======
+import { categories } from "@/lib/mock-data";
+import { filterCourses } from "@/lib/eduflow";
+import { getSessionUser } from "@/lib/session";
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -22,6 +28,7 @@ export default async function CoursesPage({
   const difficulty = valueOf(params.difficulty);
   const price = valueOf(params.price) as "free" | "paid" | undefined;
   const sort = valueOf(params.sort) as "rating" | "duration" | "price" | undefined;
+<<<<<<< HEAD
   const [courses, categories, user] = await Promise.all([
     filterCoursesFromDb({ q, category, difficulty, price, sort }),
     getCategoriesFromDb(),
@@ -30,6 +37,13 @@ export default async function CoursesPage({
 
   return (
     <PageShell user={user ?? undefined}>
+=======
+  const courses = filterCourses({ q, category, difficulty, price, sort });
+  const user = (await getSessionUser()) ?? undefined;
+
+  return (
+    <PageShell user={user}>
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
       <PageTitle
         eyebrow="Course catalog"
         title="Find the next course to move your work forward"

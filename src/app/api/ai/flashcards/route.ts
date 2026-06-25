@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { callAiService } from "@/lib/ai-client";
-import { getCurrentPrincipal } from "@/lib/ai-session";
+import { requireAiPrincipal } from "@/lib/ai-session";
 
 // BFF: list the caller's deck for a lesson (contract §3).
 export async function GET(request: Request) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const lessonId = new URL(request.url).searchParams.get("lessonId");
   if (!lessonId) {
     return NextResponse.json({ error: { code: "BAD_REQUEST", message: "lessonId required" } }, { status: 400 });

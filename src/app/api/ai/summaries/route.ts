@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { callAiService } from "@/lib/ai-client";
-import { getCurrentPrincipal, resolveLessonContent } from "@/lib/ai-session";
+import { requireAiPrincipal, resolveLessonContent } from "@/lib/ai-session";
 
 // BFF for summaries (contract §2). The browser sends only { lessonId }; the BFF resolves the
 // principal + the lesson content it owns, then forwards the enriched request to ai-service.
@@ -12,8 +12,13 @@ export async function GET(request: Request) {
   if (!lessonId && !resourceId) {
     return badRequest("Provide lessonId or resourceId");
   }
+<<<<<<< HEAD
   const principal = await getCurrentPrincipal();
   if (!principal) return unauthorized();
+=======
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const qs = lessonId ? `lessonId=${encodeURIComponent(lessonId)}` : `resourceId=${encodeURIComponent(resourceId!)}`;
   const { status, data } = await callAiService<unknown>({
     method: "GET",
@@ -31,8 +36,13 @@ export async function POST(request: Request) {
   const resolved = await resolveLessonContent(lessonId);
   if (!resolved) return notFound("Lesson not found");
 
+<<<<<<< HEAD
   const principal = await getCurrentPrincipal();
   if (!principal) return unauthorized();
+=======
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const { status, data } = await callAiService<unknown>({
     method: "POST",
     path: "/api/v1/ai/summaries",

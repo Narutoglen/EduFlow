@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { callAiService } from "@/lib/ai-client";
-import { getCurrentPrincipal } from "@/lib/ai-session";
+import { requireAiPrincipal } from "@/lib/ai-session";
 
 // BFF: record an SM-2 review (contract §3). ai-service enforces card ownership (anti-IDOR).
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ cardId: string }> },
 ) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const { cardId } = await params;
   const body = await request.json().catch(() => null);
   const grade = Number(body?.grade);

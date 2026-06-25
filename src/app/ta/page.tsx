@@ -16,6 +16,7 @@ import {
 import { assignmentSubmissions, enrollments, users } from "@/lib/mock-data";
 import { requireRole } from "@/lib/session";
 
+<<<<<<< HEAD
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function valueOf(value: string | string[] | undefined) {
@@ -31,6 +32,10 @@ export default async function TaDashboardPage({
   const notice = valueOf(params.notice);
   const grading = valueOf(params.grade) === "submission";
   const ta = await requireRole("TA");
+=======
+export default async function TaDashboardPage() {
+  const ta = await requireRole(["TA"]);
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const courses = getCoursesForTa(ta.id);
   const courseIds = new Set(courses.map((course) => course.id));
   const roster = enrollments.filter((enrollment) => courseIds.has(enrollment.courseId));
@@ -44,51 +49,13 @@ export default async function TaDashboardPage({
         eyebrow="Teaching assistant"
         title="Support learners without editing course content"
         body="Review assigned course rosters, respond to forum questions, and grade submissions delegated by lecturers."
+        action={
+          <ButtonLink href="/lecturer/grading">
+            <NotebookPen size={16} />
+            Open grading queue
+          </ButtonLink>
+        }
       />
-
-      {notice === "feedback-sent" ? (
-        <Panel className="mb-6 border-emerald-200 bg-emerald-50 text-emerald-950">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} />
-            <p className="font-semibold">Feedback saved and ready for the learner.</p>
-          </div>
-        </Panel>
-      ) : null}
-
-      {grading ? (
-        <Panel className="mb-6">
-          <div className="mb-5 flex items-center gap-2">
-            <NotebookPen className="text-emerald-600" size={20} />
-            <h2 className="text-xl font-semibold">Grade submission</h2>
-          </div>
-          <form action="/ta" className="grid gap-4 md:grid-cols-[160px_1fr_auto] md:items-end">
-            <input type="hidden" name="notice" value="feedback-sent" />
-            <label className="block text-sm font-medium">
-              Score
-              <input
-                name="score"
-                type="number"
-                min="0"
-                max="100"
-                defaultValue="88"
-                className="mt-2 min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Feedback
-              <input
-                name="feedback"
-                defaultValue="Clear work. Add one more learner consent note before final submission."
-                className="mt-2 min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
-              />
-            </label>
-            <button className="inline-flex min-h-11 items-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">
-              <Send size={16} />
-              Send feedback
-            </button>
-          </form>
-        </Panel>
-      ) : null}
 
       <section className="grid gap-4 md:grid-cols-4">
         <StatCard label="Assigned courses" value={`${courses.length}`} detail="Delegated by lecturer" />
@@ -155,7 +122,7 @@ export default async function TaDashboardPage({
                   <p className="mt-2 text-zinc-600 dark:text-zinc-300">
                     {submission.feedback ?? "Ready for written feedback."}
                   </p>
-                  <ButtonLink href="/ta?grade=submission" variant="secondary">
+                  <ButtonLink href="/lecturer/grading" variant="secondary">
                     Grade
                   </ButtonLink>
                 </div>

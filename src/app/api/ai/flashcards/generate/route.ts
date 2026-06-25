@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { callAiService } from "@/lib/ai-client";
-import { getCurrentPrincipal, resolveLessonContent } from "@/lib/ai-session";
+import { requireAiPrincipal, resolveLessonContent } from "@/lib/ai-session";
 
 // BFF: generate a flashcard deck (contract §3). Browser sends { lessonId, count }; BFF enriches
 // with the lesson content it owns before forwarding to ai-service.
@@ -15,6 +15,7 @@ export async function POST(request: Request) {
   if (!resolved) {
     return NextResponse.json({ error: { code: "NOT_FOUND", message: "Lesson not found" } }, { status: 404 });
   }
+<<<<<<< HEAD
   const principal = await getCurrentPrincipal();
   if (!principal) {
     return NextResponse.json(
@@ -22,6 +23,10 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   }
+=======
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const { status, data } = await callAiService<unknown>({
     method: "POST",
     path: "/api/v1/ai/flashcards/generate",

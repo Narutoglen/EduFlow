@@ -24,8 +24,12 @@ import {
   getPreviousLesson,
   getQuizForLesson,
 } from "@/lib/eduflow";
+<<<<<<< HEAD
 import { getCourseByIdFromDb, getEnrollmentFromDb } from "@/lib/course-data";
 import { requireRole } from "@/lib/session";
+=======
+import { requireUser } from "@/lib/session";
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 import { videoAdapter } from "@/lib/adapters";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -60,7 +64,12 @@ export default async function LearnPage({
   ]);
   if (!course) notFound();
 
+<<<<<<< HEAD
   const enrollment = await getEnrollmentFromDb(student.id, course.id);
+=======
+  const student = await requireUser(`/learn/${courseId}/${lessonId}`);
+  const enrollment = getEnrollment(student.id, course.id);
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const lesson = getLessons(course).find((item) => item.id === lessonId);
   if (!lesson) notFound();
 
@@ -77,10 +86,10 @@ export default async function LearnPage({
     <PageShell user={student} className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-normal text-cyan-700 dark:text-cyan-300">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
             {course.title}
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-normal dark:text-white">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight dark:text-white">
             {lesson.title}
           </h1>
         </div>

@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { callAiService } from "@/lib/ai-client";
-import { getCurrentPrincipal } from "@/lib/ai-session";
+import { requireAiPrincipal } from "@/lib/ai-session";
 
 // BFF: messages in a conversation (contract §4). ai-service enforces ownership.
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const { id } = await params;
   const principal = await getCurrentPrincipal();
   if (!principal) {

@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+import { Award, Bell, BookOpen, Flame, GraduationCap, Megaphone, Trophy } from "lucide-react";
+=======
 import {
   ArrowRight,
   Award,
@@ -6,11 +9,15 @@ import {
   Flame,
   GraduationCap,
 } from "lucide-react";
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 import { CourseCard } from "@/components/course-card";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, ProgressBar, StatCard } from "@/components/ui";
+import { getStudentAchievements } from "@/lib/achievements";
+import { getStudentAnnouncements } from "@/lib/announcements";
 import {
   canIssueCertificate,
+<<<<<<< HEAD
 } from "@/lib/eduflow";
 import {
   getCourseByIdFromDb,
@@ -37,6 +44,33 @@ export default async function StudentDashboardPage() {
     getQuizAttemptsForStudentFromDb(student.id),
     getSubmissionsForStudentFromDb(student.id),
   ]);
+=======
+  getCourseById,
+  getEnrollmentsForStudent,
+  getLesson,
+  getNotifications,
+} from "@/lib/eduflow";
+import { requireRole } from "@/lib/session";
+
+export default async function StudentDashboardPage() {
+  const student = await requireRole(["STUDENT"]);
+  const enrollments = getEnrollmentsForStudent(student.id);
+  const announcements = await getStudentAnnouncements(student.id);
+  // Real graded work from the database, so quizzes a learner just took and
+  // assignments a lecturer just scored show up immediately.
+  const { scores } = await getStudentAchievements(student.id);
+  const enrolledCourses = enrollments
+    .map((enrollment) => ({
+      enrollment,
+      course: getCourseById(enrollment.courseId),
+    }))
+    .filter((item) => item.course);
+  const notifications = getNotifications(student.id);
+<<<<<<< HEAD
+=======
+  const quizAttempts = getQuizAttempts(student.id);
+  const submissions = getSubmissionsForStudent(student.id);
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const continueEnrollment =
     enrollments.find((enrollment) => enrollment.progressPercent < 100) ??
     enrollments[0];
@@ -49,6 +83,7 @@ export default async function StudentDashboardPage() {
           .flatMap((module) => module.lessons)
           .find((lesson) => lesson.id === continueEnrollment.lastAccessedLessonId)
       : undefined;
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
   const averageGrade =
     enrollments.reduce((total, enrollment) => total + enrollment.gradePercent, 0) /
     Math.max(enrollments.length, 1);
@@ -63,10 +98,16 @@ export default async function StudentDashboardPage() {
         title={`Welcome back, ${student.name.split(" ")[0]}`}
         body="Track your enrolled courses, grades, streak, certificates, and the notifications that need attention."
         action={
-          <ButtonLink href="/courses">
-            <BookOpen size={16} />
-            Browse courses
-          </ButtonLink>
+          <>
+            <ButtonLink href="/achievements" variant="secondary">
+              <Trophy size={16} />
+              Achievements
+            </ButtonLink>
+            <ButtonLink href="/courses">
+              <BookOpen size={16} />
+              Browse courses
+            </ButtonLink>
+          </>
         }
       />
 
@@ -105,7 +146,11 @@ export default async function StudentDashboardPage() {
         />
         <StatCard
           label="Streak"
+<<<<<<< HEAD
           value={`${longestStreak} days`}
+=======
+          value={`${enrollments.reduce((max, item) => Math.max(max, item.streakDays), 0)} days`}
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
           detail="Learning consistency"
         />
         <StatCard
@@ -136,48 +181,102 @@ export default async function StudentDashboardPage() {
           </Panel>
 
           <Panel>
-            <h2 className="text-xl font-semibold">Grade book</h2>
-            <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-stone-100 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">
-                  <tr>
-                    <th className="px-4 py-3">Item</th>
-                    <th className="px-4 py-3">Score</th>
-                    <th className="px-4 py-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {quizAttempts.map((attempt) => (
-                    <tr key={attempt.id}>
-                      <td className="px-4 py-3">Quiz attempt</td>
-                      <td className="px-4 py-3">{attempt.scorePercent}%</td>
-                      <td className="px-4 py-3">
-                        <Badge tone={attempt.passed ? "green" : "red"}>
-                          {attempt.passed ? "Passed" : "Needs review"}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                  {submissions.map((submission) => (
-                    <tr key={submission.id}>
-                      <td className="px-4 py-3">Assignment submission</td>
-                      <td className="px-4 py-3">
-                        {submission.score ?? "Pending"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge tone={submission.status === "GRADED" ? "green" : "amber"}>
-                          {submission.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Grade book</h2>
+              <ButtonLink href="/achievements" variant="secondary">
+                <Trophy size={16} />
+                View results
+              </ButtonLink>
             </div>
+            {scores.length === 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                No scored work yet. Take a quiz or submit an assignment to start your grade book.
+              </p>
+            ) : (
+              <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-stone-100 text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">
+                    <tr>
+                      <th className="px-4 py-3">Item</th>
+                      <th className="px-4 py-3">Score</th>
+                      <th className="px-4 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    {scores.map((score) => (
+                      <tr key={`${score.kind}-${score.id}`}>
+                        <td className="px-4 py-3">
+                          <span className="font-medium">{score.title}</span>
+                          <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                            {score.courseTitle}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {score.kind === "assignment" && score.rawScore != null
+                            ? `${score.rawScore}/${score.maxScore}`
+                            : score.scorePercent != null
+                              ? `${score.scorePercent}%`
+                              : "Pending"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            tone={
+                              score.passed === true
+                                ? "green"
+                                : score.passed === false
+                                  ? "red"
+                                  : "amber"
+                            }
+                          >
+                            {score.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Panel>
         </div>
 
         <aside className="space-y-6">
+          <Panel>
+            <div className="flex items-center gap-2">
+              <Megaphone className="text-amber-600" size={20} />
+              <h2 className="text-xl font-semibold">Announcements</h2>
+            </div>
+            <div className="mt-4 space-y-3">
+              {announcements.length === 0 ? (
+                <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  No announcements from your lecturers yet.
+                </p>
+              ) : (
+                announcements.map((announcement) => (
+                  <div
+                    key={announcement.id}
+                    className="rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-800"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold">{announcement.title}</p>
+                      <span className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                        {announcement.startsAt.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-zinc-600 dark:text-zinc-300">{announcement.body}</p>
+                    <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                      {announcement.authorName}
+                      {announcement.courseTitle ? ` · ${announcement.courseTitle}` : ""}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </Panel>
+
           <Panel>
             <div className="flex items-center gap-2">
               <Bell className="text-cyan-700" size={20} />

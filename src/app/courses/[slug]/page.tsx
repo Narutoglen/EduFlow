@@ -19,12 +19,16 @@ import {
   getFirstLesson,
   getInstructor,
 } from "@/lib/eduflow";
+<<<<<<< HEAD
 import {
   getCategoriesFromDb,
   getCourseBySlugFromDb,
   getEnrollmentFromDb,
 } from "@/lib/course-data";
 import { getCurrentUser } from "@/lib/session";
+=======
+import { getSessionUser } from "@/lib/session";
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -48,17 +52,31 @@ export default async function CourseDetailPage({
   ]);
   if (!course) notFound();
 
+<<<<<<< HEAD
   const instructor = getInstructor(course);
   const category = categories.find((item) => item.id === course.categoryId);
   const enrollment =
     user?.role === "STUDENT" ? await getEnrollmentFromDb(user.id, course.id) : undefined;
+=======
+  const user = (await getSessionUser()) ?? undefined;
+  const instructor = getInstructor(course);
+  const category = getCategory(course.categoryId);
+  const enrollment = user ? getEnrollment(user.id, course.id) : undefined;
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const firstLesson = getFirstLesson(course);
   const reviews = getCourseReviews(course.id);
   const progress = completionForCourse(course, enrollment);
   const checkoutComplete = valueOf(query.checkout) === "success";
 
   return (
+<<<<<<< HEAD
     <PageShell user={user ?? undefined} className="space-y-8">
+=======
+<<<<<<< HEAD
+    <PageShell user={user} className="space-y-8">
+=======
+    <PageShell user={student} className="space-y-8">
+>>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
       {checkoutComplete ? (
         <Panel className="border-emerald-200 bg-emerald-50 text-emerald-950">
           <div className="flex items-center gap-2">
@@ -70,6 +88,7 @@ export default async function CourseDetailPage({
         </Panel>
       ) : null}
 
+>>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
       <section className="grid overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative min-h-[420px] bg-zinc-950 text-white">
           <Image

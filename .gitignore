@@ -45,11 +45,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-reports
-meomory
-security
-tasks
-Agent.md
-contracts
-.claude
-docs
+
+
