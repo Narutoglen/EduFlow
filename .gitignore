@@ -14,6 +14,7 @@
 /coverage
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # next.js
 /.next/
@@ -33,6 +34,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+.npm-cache/
 
 # env files (can opt-in for committing if needed)
 .env*

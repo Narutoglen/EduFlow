@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getCourseById, getLesson } from "@/lib/eduflow";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -25,6 +26,38 @@ export async function POST(request: Request) {
   const returnTo = String(
     payload.returnTo ?? `/learn/${courseId}/${lessonId}?notice=progress-saved`,
   );
+  const student = await requireRole("STUDENT");
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    include: { module: { include: { course: { include: { modules: { include: { lessons: true } } } } } } },
+  });
+  if (!lesson || lesson.module.courseId !== courseId || lesson.module.course.deletedAt) {
+    return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+  }
+  await prisma.lessonProgress.upsert({
+    where: { studentId_lessonId: { studentId: student.id, lessonId } },
+    update: { completed: true, watchedSeconds: 0, lastPlaybackSecond: 0 },
+    create: { studentId: student.id, lessonId, completed: true },
+  });
+  const lessons = lesson.module.course.modules.flatMap((module) => module.lessons);
+  const completed = await prisma.lessonProgress.count({
+    where: {
+      studentId: student.id,
+      completed: true,
+      lessonId: { in: lessons.map((item) => item.id) },
+    },
+  });
+  await prisma.enrollment.upsert({
+    where: { studentId_courseId: { studentId: student.id, courseId } },
+    update: {
+      progressPercent: lessons.length ? Math.round((completed / lessons.length) * 100) : 0,
+    },
+    create: {
+      studentId: student.id,
+      courseId,
+      progressPercent: lessons.length ? Math.round((completed / lessons.length) * 100) : 0,
+    },
+  });
 
   if (!contentType.includes("application/json")) {
     return NextResponse.redirect(new URL(returnTo, request.url), 303);
@@ -33,8 +66,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     courseId,
     lessonId,
-    courseFound: Boolean(getCourseById(courseId)),
-    lessonFound: Boolean(getLesson(courseId, lessonId)),
+    courseFound: true,
+    lessonFound: true,
     progressSynced: true,
     resumeFromSeconds: 0,
   });

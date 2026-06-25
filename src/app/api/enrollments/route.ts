@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { getCourseById } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import { notifyAssignmentDeadlines } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
@@ -8,18 +9,36 @@ export async function POST(request: Request) {
     ? await request.json()
     : Object.fromEntries((await request.formData()).entries());
   const courseId = String(payload.courseId ?? "course-data-literacy");
-  const course = getCourseById(courseId);
-  const student = userForRole("STUDENT");
+  const student = await requireRole("STUDENT");
+  const course = await prisma.course.findFirst({ where: { id: courseId, deletedAt: null } });
+  if (!course) {
+    return NextResponse.json({ error: "Course not found" }, { status: 404 });
+  }
+  const existing = await prisma.enrollment.findUnique({
+    where: { studentId_courseId: { studentId: student.id, courseId } },
+  });
+  const enrollment = await prisma.enrollment.upsert({
+    where: { studentId_courseId: { studentId: student.id, courseId } },
+    update: {},
+    create: {
+      studentId: student.id,
+      courseId,
+      paid: course.priceCents === 0,
+    },
+  });
+  if (!existing) {
+    await notifyAssignmentDeadlines(student.id, courseId);
+  }
 
   return NextResponse.json(
     {
-      id: `enrollment-${courseId}`,
+      id: enrollment.id,
       courseId,
       studentId: student.id,
-      status: course ? "ENROLLED" : "COURSE_NOT_FOUND",
-      progressPercent: 0,
-      paid: course ? course.priceCents === 0 : false,
+      status: "ENROLLED",
+      progressPercent: enrollment.progressPercent,
+      paid: enrollment.paid,
     },
-    { status: course ? 201 : 404 },
+    { status: 201 },
   );
 }

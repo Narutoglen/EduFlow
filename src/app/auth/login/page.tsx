@@ -1,7 +1,7 @@
 import { CheckCircle2, KeyRound, Mail, ShieldCheck } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { ButtonLink, Panel } from "@/components/ui";
-import { userForRole } from "@/lib/mock-data";
+import { getCurrentUser } from "@/lib/session";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -16,10 +16,10 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
   const notice = valueOf(params.notice);
-  const student = userForRole("STUDENT");
+  const user = await getCurrentUser();
 
   return (
-    <PageShell user={student}>
+    <PageShell user={user ?? undefined}>
       <PageTitle
         eyebrow="Authentication"
         title="Sign in to EduFlow"
@@ -33,6 +33,12 @@ export default async function LoginPage({
             <p className="font-semibold">
               {notice === "reset-sent"
                 ? "Password reset instructions are ready to send."
+                : notice === "invalid"
+                  ? "That email and password did not match an active account."
+                  : notice === "use-email"
+                    ? "Use your registered email and password for local review."
+                    : notice === "registered"
+                      ? "Your account has been created."
                 : "You are signed in."}
             </p>
           </div>
@@ -50,7 +56,7 @@ export default async function LoginPage({
                 <input
                   name="email"
                   type="email"
-                  defaultValue="amina@student.eduflow.test"
+                  autoComplete="email"
                   className="w-full bg-transparent outline-none"
                 />
               </span>
@@ -62,7 +68,7 @@ export default async function LoginPage({
                 <input
                   name="password"
                   type="password"
-                  defaultValue="password"
+                  autoComplete="current-password"
                   className="w-full bg-transparent outline-none"
                 />
               </span>
@@ -84,24 +90,18 @@ export default async function LoginPage({
         <Panel>
           <div className="flex items-center gap-2">
             <ShieldCheck className="text-emerald-600" size={20} />
-            <h2 className="text-xl font-semibold">Quick role access</h2>
-          </div>
-          <div className="mt-4 space-y-3 text-sm">
-            {[
-              ["Student", "/dashboard"],
-              ["Lecturer", "/lecturer"],
-              ["Teaching Assistant", "/ta"],
-              ["Admin", "/admin"],
-            ].map(([label, href]) => (
-              <ButtonLink key={label} href={href} variant="secondary">
-                {label}
-              </ButtonLink>
-            ))}
+            <h2 className="text-xl font-semibold">New to EduFlow?</h2>
           </div>
           <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">
-            Use a role shortcut to review the experience from a learner,
-            lecturer, teaching assistant, or administrator perspective.
+            Create an account to enroll in courses, receive notifications, and
+            track your progress. The first registered user on a fresh
+            installation becomes the platform administrator.
           </p>
+          <div className="mt-5">
+            <ButtonLink href="/auth/register" variant="secondary">
+              Create an account
+            </ButtonLink>
+          </div>
         </Panel>
       </section>
     </PageShell>

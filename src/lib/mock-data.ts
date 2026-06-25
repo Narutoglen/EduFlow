@@ -23,7 +23,7 @@ export const users: User[] = [
   {
     id: "usr-student",
     name: "Amina Otieno",
-    email: "amina@student.eduflow.test",
+    email: "student-record@eduflow.local",
     role: "STUDENT",
     avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80",
     bio: "Data analyst building a stronger portfolio through applied learning.",
@@ -33,7 +33,7 @@ export const users: User[] = [
   {
     id: "usr-lecturer",
     name: "Dr. Mateo Ruiz",
-    email: "mateo@lecturer.eduflow.test",
+    email: "faculty@eduflow.local",
     role: "LECTURER",
     avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80",
     bio: "Learning designer and AI curriculum lead.",
@@ -44,7 +44,7 @@ export const users: User[] = [
   {
     id: "usr-ta",
     name: "Leah Kamau",
-    email: "leah@ta.eduflow.test",
+    email: "support@eduflow.local",
     role: "TA",
     avatarUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=160&q=80",
     bio: "Teaching assistant focused on feedback loops and learner support.",
@@ -54,7 +54,7 @@ export const users: User[] = [
   {
     id: "usr-admin",
     name: "Noah Chen",
-    email: "noah@admin.eduflow.test",
+    email: "admin-record@eduflow.local",
     role: "ADMIN",
     avatarUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=160&q=80",
     bio: "Platform operator for course quality, analytics, and safety.",
@@ -64,7 +64,7 @@ export const users: User[] = [
   {
     id: "usr-review",
     name: "Priya Shah",
-    email: "priya@student.eduflow.test",
+    email: "review-record@eduflow.local",
     role: "STUDENT",
     avatarUrl: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=160&q=80",
     bio: "Product manager learning AI facilitation.",

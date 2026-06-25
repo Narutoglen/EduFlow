@@ -1,13 +1,13 @@
 import { MailCheck } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { ButtonLink, Panel } from "@/components/ui";
-import { userForRole } from "@/lib/mock-data";
+import { getCurrentUser } from "@/lib/session";
 
-export default function ResetPage() {
-  const student = userForRole("STUDENT");
+export default async function ResetPage() {
+  const user = await getCurrentUser();
 
   return (
-    <PageShell user={student}>
+    <PageShell user={user ?? undefined}>
       <PageTitle
         eyebrow="Password reset"
         title="Send a reset link"
@@ -26,7 +26,7 @@ export default function ResetPage() {
               className="mt-2 min-h-11 w-full rounded-md border border-zinc-200 bg-white px-3 dark:border-zinc-700 dark:bg-zinc-950"
               name="email"
               type="email"
-              defaultValue="amina@student.eduflow.test"
+              autoComplete="email"
             />
           </label>
           <button className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">

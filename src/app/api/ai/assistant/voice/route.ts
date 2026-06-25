@@ -12,7 +12,13 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const principal = getCurrentPrincipal();
+  const principal = await getCurrentPrincipal();
+  if (!principal) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
+      { status: 401 },
+    );
+  }
   const { status, data } = await forwardMultipart<unknown>(
     "/api/v1/ai/assistant/voice",
     form,

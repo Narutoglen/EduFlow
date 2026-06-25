@@ -15,16 +15,33 @@ export type User = {
   bio: string;
   institution?: string;
   isActive: boolean;
+  emailNotifications?: boolean;
   socialLinks: string[];
 };
 
 export type Category = {
   id: string;
   name: string;
+  slug?: string;
   color: string;
 };
 
-type LessonResource = {
+export type CourseReference = {
+  id: string;
+  courseId: string;
+  lessonId?: string | null;
+  title: string;
+  authors: string[];
+  publisher: string;
+  publishedDate?: string | null;
+  url: string;
+  accessedDate?: string | null;
+  sourceType: string;
+  apaCitation: string;
+  annotation?: string | null;
+};
+
+export type LessonResource = {
   id: string;
   title: string;
   type: ResourceType;
@@ -38,6 +55,7 @@ export type Lesson = {
   videoUrl: string;
   content: string;
   resources: LessonResource[];
+  references?: CourseReference[];
   order: number;
   forumThreadId: string;
 };
@@ -111,6 +129,7 @@ export type Course = {
   modules: Module[];
   quizzes: Quiz[];
   assignments: Assignment[];
+  references?: CourseReference[];
 };
 
 export type Enrollment = {
@@ -170,7 +189,15 @@ export type Notification = {
   userId: string;
   title: string;
   body: string;
-  kind: "reply" | "grade" | "announcement" | "deadline";
+  kind:
+    | "reply"
+    | "grade"
+    | "announcement"
+    | "deadline"
+    | "registration"
+    | "assignment-submitted"
+    | "exam-submitted"
+    | "lecturer-application";
   read: boolean;
 };
 

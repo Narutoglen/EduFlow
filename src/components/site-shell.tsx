@@ -3,7 +3,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   LogIn,
-  Moon,
+  LogOut,
   ShieldCheck,
   UsersRound,
 } from "lucide-react";
@@ -12,6 +12,8 @@ import type { ReactNode } from "react";
 import { roleLabel } from "@/lib/eduflow";
 import type { Role, User } from "@/lib/types";
 import { ButtonLink, cn } from "./ui";
+import { CookieConsent } from "./cookie-consent";
+import { ThemeToggle } from "./theme-toggle";
 
 const roleHome: Record<Role, { href: string; label: string; icon: ReactNode }> = {
   STUDENT: {
@@ -62,17 +64,21 @@ function SiteHeader({ user }: { user?: User }) {
               {roleHome[user.role].label}
             </ButtonLink>
           ) : null}
-          <ButtonLink href="/auth/login" variant="secondary">
-            <LogIn size={16} />
-            Sign in
-          </ButtonLink>
-          <button
-            className="inline-flex min-h-10 items-center justify-center rounded-md px-3 text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-            title="Dark mode follows your system preference"
-            type="button"
-          >
-            <Moon size={16} />
-          </button>
+          {user ? (
+            <form action="/api/auth/session" method="post">
+              <input type="hidden" name="intent" value="logout" />
+              <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-950 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800">
+                <LogOut size={16} />
+                Sign out
+              </button>
+            </form>
+          ) : (
+            <ButtonLink href="/auth/login" variant="secondary">
+              <LogIn size={16} />
+              Sign in
+            </ButtonLink>
+          )}
+          <ThemeToggle />
         </nav>
       </div>
     </header>
@@ -94,6 +100,7 @@ export function PageShell({
       <main className={cn("mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8", className)}>
         {children}
       </main>
+      <CookieConsent />
     </div>
   );
 }

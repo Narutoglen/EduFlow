@@ -8,7 +8,13 @@ export async function GET(
   { params }: { params: Promise<{ jobId: string }> },
 ) {
   const { jobId } = await params;
-  const principal = getCurrentPrincipal();
+  const principal = await getCurrentPrincipal();
+  if (!principal) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
+      { status: 401 },
+    );
+  }
   const { status, data } = await callAiService<unknown>({
     method: "GET",
     path: `/api/v1/ai/jobs/${encodeURIComponent(jobId)}`,

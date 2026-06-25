@@ -18,15 +18,14 @@ import {
   canAccessLesson,
   completionForCourse,
   getAssignmentsForLesson,
-  getCourseById,
-  getEnrollment,
   getLessonDiscussions,
   getLessons,
   getNextLesson,
   getPreviousLesson,
   getQuizForLesson,
 } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import { getCourseByIdFromDb, getEnrollmentFromDb } from "@/lib/course-data";
+import { requireRole } from "@/lib/session";
 import { videoAdapter } from "@/lib/adapters";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -55,11 +54,13 @@ export default async function LearnPage({
   const query = await searchParams;
   const notice = valueOf(query.notice);
   const message = noticeText(notice);
-  const course = getCourseById(courseId);
+  const [student, course] = await Promise.all([
+    requireRole("STUDENT"),
+    getCourseByIdFromDb(courseId),
+  ]);
   if (!course) notFound();
 
-  const student = userForRole("STUDENT");
-  const enrollment = getEnrollment(student.id, course.id);
+  const enrollment = await getEnrollmentFromDb(student.id, course.id);
   const lesson = getLessons(course).find((item) => item.id === lessonId);
   if (!lesson) notFound();
 
@@ -175,13 +176,20 @@ export default async function LearnPage({
             <>
               <Panel className="p-0">
                 <div className="aspect-video overflow-hidden rounded-t-lg bg-zinc-950">
-                  <iframe
-                    className="h-full w-full"
-                    src={playback.url}
-                    title={lesson.title}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                  {playback.url ? (
+                    <iframe
+                      className="h-full w-full"
+                      src={playback.url}
+                      title={lesson.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-white">
+                      <Play size={32} />
+                      <p className="text-sm font-semibold">Lesson video pending</p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 p-4 text-sm">
                   <Badge tone="blue">{playback.provider}</Badge>
@@ -270,6 +278,21 @@ export default async function LearnPage({
                     </div>
                   </div>
                 </div>
+                {lesson.references?.length ? (
+                  <div className="mt-5 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                    <h3 className="text-sm font-semibold">Lesson sources</h3>
+                    <div className="mt-3 space-y-3">
+                      {lesson.references.map((reference) => (
+                        <div key={reference.id} className="text-sm">
+                          <p className="font-medium">{reference.title}</p>
+                          <p className="mt-1 leading-6 text-zinc-600 dark:text-zinc-300">
+                            {reference.apaCitation}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </Panel>
 
               {quiz ? (
@@ -321,6 +344,9 @@ export default async function LearnPage({
                   <h2 className="text-xl font-semibold">{assignment.title}</h2>
                   <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
                     {assignment.prompt}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    Due date: {assignment.deadline}
                   </p>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div>

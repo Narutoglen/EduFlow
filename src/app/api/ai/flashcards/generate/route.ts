@@ -11,11 +11,17 @@ export async function POST(request: Request) {
   if (!lessonId) {
     return NextResponse.json({ error: { code: "BAD_REQUEST", message: "lessonId required" } }, { status: 400 });
   }
-  const resolved = resolveLessonContent(lessonId);
+  const resolved = await resolveLessonContent(lessonId);
   if (!resolved) {
     return NextResponse.json({ error: { code: "NOT_FOUND", message: "Lesson not found" } }, { status: 404 });
   }
-  const principal = getCurrentPrincipal();
+  const principal = await getCurrentPrincipal();
+  if (!principal) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
+      { status: 401 },
+    );
+  }
   const { status, data } = await callAiService<unknown>({
     method: "POST",
     path: "/api/v1/ai/flashcards/generate",

@@ -2,8 +2,8 @@ import { Award, CheckCircle2, Clock, Filter, Search, Target } from "lucide-react
 import { CourseCard } from "@/components/course-card";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, EmptyState, Panel } from "@/components/ui";
-import { categories, userForRole } from "@/lib/mock-data";
-import { filterCourses } from "@/lib/eduflow";
+import { filterCoursesFromDb, getCategoriesFromDb } from "@/lib/course-data";
+import { getCurrentUser } from "@/lib/session";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -22,11 +22,14 @@ export default async function CoursesPage({
   const difficulty = valueOf(params.difficulty);
   const price = valueOf(params.price) as "free" | "paid" | undefined;
   const sort = valueOf(params.sort) as "rating" | "duration" | "price" | undefined;
-  const courses = filterCourses({ q, category, difficulty, price, sort });
-  const student = userForRole("STUDENT");
+  const [courses, categories, user] = await Promise.all([
+    filterCoursesFromDb({ q, category, difficulty, price, sort }),
+    getCategoriesFromDb(),
+    getCurrentUser(),
+  ]);
 
   return (
-    <PageShell user={student}>
+    <PageShell user={user ?? undefined}>
       <PageTitle
         eyebrow="Course catalog"
         title="Find the next course to move your work forward"

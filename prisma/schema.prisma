@@ -54,6 +54,7 @@ model User {
   bio                   String?
   institution           String?
   isActive              Boolean                @default(true)
+  emailNotifications    Boolean                @default(true)
   socialLinks           String[]               @default([])
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -81,6 +82,9 @@ model Session {
   revokedAt        DateTime?
   createdAt        DateTime  @default(now())
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Category {
@@ -102,6 +106,13 @@ model Course {
   categoryId     String
   difficulty     Difficulty
   priceCents     Int                    @default(0)
+  rating         Float                  @default(0)
+  reviewCount    Int                    @default(0)
+  durationHours  Float                  @default(0)
+  estimatedWeeklyHours Int              @default(0)
+  audience       String                 @default("")
+  learningOutcomes String[]             @default([])
+  certificateEligible Boolean           @default(true)
   prerequisites  String[]               @default([])
   tags           String[]               @default([])
   status         CourseStatus           @default(DRAFT)
@@ -111,10 +122,12 @@ model Course {
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
   publishedAt    DateTime?
+  deletedAt      DateTime?
   category       Category               @relation(fields: [categoryId], references: [id])
   lecturer       User                   @relation("LecturerCourses", fields: [lecturerId], references: [id])
   assistants     CourseAssistant[]
   modules        CourseModule[]
+  references     CourseReference[]
   enrollments    Enrollment[]
   quizzes        Quiz[]
   assignments    Assignment[]
@@ -123,6 +136,9 @@ model Course {
   announcements  Announcement[]
   liveSessions   LiveSession[]
   payments       Payment[]
+
+  @@index([status, deletedAt])
+  @@index([featured])
 }
 
 model CourseAssistant {
@@ -156,6 +172,7 @@ model Lesson {
   order          Int
   module         CourseModule       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   resources      LessonResource[]
+  references      CourseReference[]
   notes          LessonNote[]
   progress       LessonProgress[]
   quiz           Quiz?
@@ -163,6 +180,28 @@ model Lesson {
   discussionThreads DiscussionThread[]
 
   @@unique([moduleId, order])
+}
+
+model CourseReference {
+  id              String   @id @default(cuid())
+  courseId        String
+  lessonId        String?
+  title           String
+  authors         String[] @default([])
+  publisher       String
+  publishedDate   String?
+  url             String
+  accessedDate    DateTime?
+  sourceType      String   @default("report")
+  apaCitation     String
+  annotation      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson          Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([lessonId])
 }
 
 model LessonResource {

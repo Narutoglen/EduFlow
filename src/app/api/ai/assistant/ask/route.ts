@@ -14,7 +14,13 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const principal = getCurrentPrincipal();
+  const principal = await getCurrentPrincipal();
+  if (!principal) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
+      { status: 401 },
+    );
+  }
   const { status, data } = await callAiService<unknown>({
     method: "POST",
     path: "/api/v1/ai/assistant/ask",
@@ -24,7 +30,7 @@ export async function POST(request: Request) {
       question,
       conversationId: body?.conversationId ?? null,
       sourceAudioId: body?.sourceAudioId ?? null,
-      titles: getCourseLessonTitles(courseId),
+      titles: await getCourseLessonTitles(courseId),
     },
   });
   return NextResponse.json(data, { status });

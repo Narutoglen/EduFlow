@@ -21,8 +21,23 @@ export const paymentAdapter = {
 
 export const emailAdapter = {
   async sendTransactionalEmail(to: string, subject: string, body: string) {
+    const payload = {
+      to,
+      from: process.env.EMAIL_FROM ?? "EduFlow <no-reply@eduflow.local>",
+      subject,
+      body,
+    };
+    if (process.env.EMAIL_WEBHOOK_URL) {
+      await fetch(process.env.EMAIL_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      console.info("[EduFlow email]", payload);
+    }
     return {
-      provider: "console-email",
+      provider: process.env.EMAIL_WEBHOOK_URL ? "webhook-email" : "console-email",
       to,
       subject,
       body,
@@ -44,7 +59,7 @@ export const storageAdapter = {
 export const videoAdapter = {
   playbackUrl(url: string) {
     return {
-      provider: url.includes("youtube") ? "YouTube" : "Video",
+      provider: url ? (url.includes("youtube") ? "YouTube" : "Video") : "Video pending",
       url,
       qualities: ["720p", "1080p"],
       speeds: [0.5, 1, 1.25, 1.5, 2],

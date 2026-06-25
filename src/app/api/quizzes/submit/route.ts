@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { courses } from "@/lib/mock-data";
-import { scoreQuiz } from "@/lib/eduflow";
+import { createUserNotification } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
@@ -10,7 +11,17 @@ export async function POST(request: Request) {
   const quizId = String(payload.quizId ?? "");
   const courseId = String(payload.courseId ?? "");
   const lessonId = String(payload.lessonId ?? "");
-  const quiz = courses.flatMap((course) => course.quizzes).find((item) => item.id === quizId);
+  const student = await requireRole("STUDENT");
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    include: {
+      course: true,
+      questions: {
+        include: { choices: true },
+        orderBy: { order: "asc" },
+      },
+    },
+  });
 
   if (!quiz) {
     return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
@@ -19,7 +30,43 @@ export async function POST(request: Request) {
   const answers = Object.fromEntries(
     quiz.questions.map((question) => [question.id, String(payload[question.id] ?? "")]),
   );
-  const result = scoreQuiz(quiz, answers);
+  const possiblePoints = quiz.questions.reduce((total, question) => total + question.points, 0);
+  const earnedPoints = quiz.questions.reduce((total, question) => {
+    const selected = question.choices.find((choice) => choice.id === answers[question.id]);
+    return total + (selected?.isCorrect ? question.points : 0);
+  }, 0);
+  const scorePercent = possiblePoints ? Math.round((earnedPoints / possiblePoints) * 100) : 0;
+  const result = {
+    scorePercent,
+    correctCount: quiz.questions.filter((question) =>
+      question.choices.some((choice) => choice.id === answers[question.id] && choice.isCorrect),
+    ).length,
+    totalQuestions: quiz.questions.length,
+    passed: scorePercent >= quiz.passScore,
+  };
+  await prisma.quizAttempt.create({
+    data: {
+      quizId,
+      studentId: student.id,
+      answers,
+      scorePercent,
+      passed: result.passed,
+    },
+  });
+  await createUserNotification({
+    userId: student.id,
+    title: "Quiz submitted",
+    body: `${quiz.title} was submitted for ${quiz.course.title}. Score: ${scorePercent}%.`,
+    kind: "exam-submitted",
+    emailSubject: `EduFlow quiz submitted: ${quiz.title}`,
+    emailBody: [
+      `Hi ${student.name},`,
+      "",
+      `Your quiz "${quiz.title}" for ${quiz.course.title} has been submitted.`,
+      `Score: ${scorePercent}%`,
+      result.passed ? "Status: Passed" : "Status: Needs review",
+    ].join("\n"),
+  });
 
   if (!contentType.includes("application/json")) {
     const notice = result.passed ? "quiz-passed" : "quiz-review";

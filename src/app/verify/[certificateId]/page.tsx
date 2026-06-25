@@ -3,7 +3,7 @@ import { Award, CheckCircle2, Download } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel } from "@/components/ui";
 import { getCertificate, getCourseById, getInstructor, getUser } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import { getCurrentUser } from "@/lib/session";
 
 export default async function VerifyCertificatePage({
   params,
@@ -19,10 +19,10 @@ export default async function VerifyCertificatePage({
   if (!course || !student) notFound();
 
   const lecturer = getInstructor(course);
-  const viewer = userForRole("STUDENT");
+  const viewer = await getCurrentUser();
 
   return (
-    <PageShell user={viewer}>
+    <PageShell user={viewer ?? undefined}>
       <PageTitle
         eyebrow="Certificate verification"
         title="Verified EduFlow certificate"

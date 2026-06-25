@@ -12,7 +12,8 @@ export async function GET(request: Request) {
   if (!lessonId && !resourceId) {
     return badRequest("Provide lessonId or resourceId");
   }
-  const principal = getCurrentPrincipal();
+  const principal = await getCurrentPrincipal();
+  if (!principal) return unauthorized();
   const qs = lessonId ? `lessonId=${encodeURIComponent(lessonId)}` : `resourceId=${encodeURIComponent(resourceId!)}`;
   const { status, data } = await callAiService<unknown>({
     method: "GET",
@@ -27,10 +28,11 @@ export async function POST(request: Request) {
   const lessonId: string | undefined = body?.lessonId;
   if (!lessonId) return badRequest("lessonId is required");
 
-  const resolved = resolveLessonContent(lessonId);
+  const resolved = await resolveLessonContent(lessonId);
   if (!resolved) return notFound("Lesson not found");
 
-  const principal = getCurrentPrincipal();
+  const principal = await getCurrentPrincipal();
+  if (!principal) return unauthorized();
   const { status, data } = await callAiService<unknown>({
     method: "POST",
     path: "/api/v1/ai/summaries",
@@ -50,4 +52,10 @@ function badRequest(message: string) {
 }
 function notFound(message: string) {
   return NextResponse.json({ error: { code: "NOT_FOUND", message } }, { status: 404 });
+}
+function unauthorized() {
+  return NextResponse.json(
+    { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
+    { status: 401 },
+  );
 }

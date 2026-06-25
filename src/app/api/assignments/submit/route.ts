@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { courses, userForRole } from "@/lib/mock-data";
 import { storageAdapter } from "@/lib/adapters";
+import { createUserNotification } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
+import { requireRole } from "@/lib/session";
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
@@ -10,15 +12,40 @@ export async function POST(request: Request) {
   const assignmentId = String(payload.assignmentId ?? "");
   const courseId = String(payload.courseId ?? "");
   const lessonId = String(payload.lessonId ?? "");
-  const assignment = courses
-    .flatMap((course) => course.assignments)
-    .find((item) => item.id === assignmentId);
+  const student = await requireRole("STUDENT");
+  const assignment = await prisma.assignment.findUnique({
+    where: { id: assignmentId },
+    include: { course: true, lesson: true },
+  });
 
   if (!assignment) {
     return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
   }
 
   const upload = await storageAdapter.createUploadUrl(`${assignmentId}.txt`);
+  const submission = await prisma.assignmentSubmission.create({
+    data: {
+      assignmentId,
+      studentId: student.id,
+      body: String(payload.body ?? ""),
+      fileUrl: upload.publicUrl,
+    },
+  });
+  await createUserNotification({
+    userId: student.id,
+    title: "Assignment submitted",
+    body: `${assignment.title} was submitted for ${assignment.course.title}. Due date: ${assignment.deadline.toLocaleDateString("en-KE")}.`,
+    kind: "assignment-submitted",
+    emailSubject: `EduFlow assignment submitted: ${assignment.title}`,
+    emailBody: [
+      `Hi ${student.name},`,
+      "",
+      `Your assignment "${assignment.title}" for ${assignment.course.title} has been submitted.`,
+      `Due date: ${assignment.deadline.toLocaleDateString("en-KE")}`,
+      "You will receive another notification when feedback is available.",
+    ].join("\n"),
+  });
+
   if (!contentType.includes("application/json")) {
     return NextResponse.redirect(
       new URL(`/learn/${courseId}/${lessonId}?notice=assignment-submitted`, request.url),
@@ -28,9 +55,9 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     {
-      id: `submission-${assignmentId}`,
+      id: submission.id,
       assignmentId,
-      studentId: userForRole("STUDENT").id,
+      studentId: student.id,
       status: "SUBMITTED",
       upload,
       submittedText: String(payload.body ?? ""),

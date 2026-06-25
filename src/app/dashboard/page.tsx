@@ -11,40 +11,50 @@ import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, ProgressBar, StatCard } from "@/components/ui";
 import {
   canIssueCertificate,
-  getCourseById,
-  getEnrollmentsForStudent,
-  getLesson,
-  getNotifications,
-  getQuizAttempts,
-  getSubmissionsForStudent,
 } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import {
+  getCourseByIdFromDb,
+  getEnrollmentsForStudentFromDb,
+  getNotificationsForUserFromDb,
+  getQuizAttemptsForStudentFromDb,
+  getSubmissionsForStudentFromDb,
+} from "@/lib/course-data";
+import { requireRole } from "@/lib/session";
 
-export default function StudentDashboardPage() {
-  const student = userForRole("STUDENT");
-  const enrollments = getEnrollmentsForStudent(student.id);
-  const enrolledCourses = enrollments
-    .map((enrollment) => ({
-      enrollment,
-      course: getCourseById(enrollment.courseId),
-    }))
-    .filter((item) => item.course);
-  const notifications = getNotifications(student.id);
-  const quizAttempts = getQuizAttempts(student.id);
-  const submissions = getSubmissionsForStudent(student.id);
+export default async function StudentDashboardPage() {
+  const student = await requireRole("STUDENT");
+  const enrollments = await getEnrollmentsForStudentFromDb(student.id);
+  const enrolledCourses = (
+    await Promise.all(
+      enrollments.map(async (enrollment) => ({
+        enrollment,
+        course: await getCourseByIdFromDb(enrollment.courseId),
+      })),
+    )
+  ).filter((item) => item.course);
+  const [notifications, quizAttempts, submissions] = await Promise.all([
+    getNotificationsForUserFromDb(student.id),
+    getQuizAttemptsForStudentFromDb(student.id),
+    getSubmissionsForStudentFromDb(student.id),
+  ]);
   const continueEnrollment =
     enrollments.find((enrollment) => enrollment.progressPercent < 100) ??
     enrollments[0];
   const continueCourse = continueEnrollment
-    ? getCourseById(continueEnrollment.courseId)
+    ? await getCourseByIdFromDb(continueEnrollment.courseId)
     : undefined;
   const continueLesson =
     continueEnrollment && continueCourse
-      ? getLesson(continueCourse.id, continueEnrollment.lastAccessedLessonId)
+      ? continueCourse.modules
+          .flatMap((module) => module.lessons)
+          .find((lesson) => lesson.id === continueEnrollment.lastAccessedLessonId)
       : undefined;
   const averageGrade =
     enrollments.reduce((total, enrollment) => total + enrollment.gradePercent, 0) /
     Math.max(enrollments.length, 1);
+  const longestStreak = enrollments.length
+    ? Math.max(...enrollments.map((item) => item.streakDays))
+    : 0;
 
   return (
     <PageShell user={student}>
@@ -95,7 +105,7 @@ export default function StudentDashboardPage() {
         />
         <StatCard
           label="Streak"
-          value={`${Math.max(...enrollments.map((item) => item.streakDays))} days`}
+          value={`${longestStreak} days`}
           detail="Learning consistency"
         />
         <StatCard
@@ -218,7 +228,7 @@ export default function StudentDashboardPage() {
             </div>
             <div className="mt-4 space-y-3">
               {enrollments.filter(canIssueCertificate).map((enrollment) => {
-                const course = getCourseById(enrollment.courseId);
+                const course = enrolledCourses.find((item) => item.enrollment.id === enrollment.id)?.course;
                 return (
                   <div key={enrollment.id} className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
                     <p className="font-semibold">{course?.title}</p>

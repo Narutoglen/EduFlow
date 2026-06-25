@@ -16,7 +16,8 @@ import {
   getLessons,
   getNotifications,
 } from "@/lib/eduflow";
-import { assignmentSubmissions, enrollments, userForRole } from "@/lib/mock-data";
+import { assignmentSubmissions, enrollments } from "@/lib/mock-data";
+import { requireRole } from "@/lib/session";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -32,7 +33,7 @@ export default async function LecturerDashboardPage({
   const params = await searchParams;
   const isCreatingCourse = valueOf(params.new) === "course";
   const notice = valueOf(params.notice);
-  const lecturer = userForRole("LECTURER");
+  const lecturer = await requireRole("LECTURER");
   const courses = getCoursesForLecturer(lecturer.id);
   const totalEnrollments = enrollments.filter((enrollment) =>
     courses.some((course) => course.id === enrollment.courseId),

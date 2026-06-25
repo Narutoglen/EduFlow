@@ -13,7 +13,8 @@ import {
   getLessonDiscussions,
   getLessons,
 } from "@/lib/eduflow";
-import { assignmentSubmissions, enrollments, userForRole, users } from "@/lib/mock-data";
+import { assignmentSubmissions, enrollments, users } from "@/lib/mock-data";
+import { requireRole } from "@/lib/session";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -29,7 +30,7 @@ export default async function TaDashboardPage({
   const params = await searchParams;
   const notice = valueOf(params.notice);
   const grading = valueOf(params.grade) === "submission";
-  const ta = userForRole("TA");
+  const ta = await requireRole("TA");
   const courses = getCoursesForTa(ta.id);
   const courseIds = new Set(courses.map((course) => course.id));
   const roster = enrollments.filter((enrollment) => courseIds.has(enrollment.courseId));

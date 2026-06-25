@@ -15,14 +15,16 @@ import {
   canIssueCertificate,
   completionForCourse,
   formatMoney,
-  getCategory,
-  getCourseBySlug,
   getCourseReviews,
-  getEnrollment,
   getFirstLesson,
   getInstructor,
 } from "@/lib/eduflow";
-import { userForRole } from "@/lib/mock-data";
+import {
+  getCategoriesFromDb,
+  getCourseBySlugFromDb,
+  getEnrollmentFromDb,
+} from "@/lib/course-data";
+import { getCurrentUser } from "@/lib/session";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -39,20 +41,24 @@ export default async function CourseDetailPage({
 }) {
   const { slug } = await params;
   const query = await searchParams;
-  const course = getCourseBySlug(slug);
+  const [course, categories, user] = await Promise.all([
+    getCourseBySlugFromDb(slug),
+    getCategoriesFromDb(),
+    getCurrentUser(),
+  ]);
   if (!course) notFound();
 
-  const student = userForRole("STUDENT");
   const instructor = getInstructor(course);
-  const category = getCategory(course.categoryId);
-  const enrollment = getEnrollment(student.id, course.id);
+  const category = categories.find((item) => item.id === course.categoryId);
+  const enrollment =
+    user?.role === "STUDENT" ? await getEnrollmentFromDb(user.id, course.id) : undefined;
   const firstLesson = getFirstLesson(course);
   const reviews = getCourseReviews(course.id);
   const progress = completionForCourse(course, enrollment);
   const checkoutComplete = valueOf(query.checkout) === "success";
 
   return (
-    <PageShell user={student} className="space-y-8">
+    <PageShell user={user ?? undefined} className="space-y-8">
       {checkoutComplete ? (
         <Panel className="border-emerald-200 bg-emerald-50 text-emerald-950">
           <div className="flex items-center gap-2">
@@ -86,13 +92,20 @@ export default async function CourseDetailPage({
         </div>
         <div className="space-y-6 p-6 md:p-8">
           <div className="aspect-video overflow-hidden rounded-lg bg-zinc-950">
-            <iframe
-              className="h-full w-full"
-              src={course.trailerUrl}
-              title={`${course.title} trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            {course.trailerUrl ? (
+              <iframe
+                className="h-full w-full"
+                src={course.trailerUrl}
+                title={`${course.title} trailer`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-white">
+                <Play size={32} />
+                <p className="text-sm font-semibold">Course preview video pending</p>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <span className="inline-flex items-center gap-2">
@@ -234,6 +247,40 @@ export default async function CourseDetailPage({
                   {review.body}
                 </blockquote>
               ))}
+            </div>
+          </Panel>
+
+          <Panel>
+            <h2 className="text-xl font-semibold">Sources and references</h2>
+            <div className="mt-4 space-y-3">
+              {course.references?.length ? (
+                course.references.map((reference) => (
+                  <div
+                    key={reference.id}
+                    className="rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800"
+                  >
+                    <p className="font-semibold">{reference.title}</p>
+                    <p className="mt-2 leading-6 text-zinc-700 dark:text-zinc-200">
+                      {reference.apaCitation}
+                    </p>
+                    {reference.annotation ? (
+                      <p className="mt-2 text-zinc-600 dark:text-zinc-300">
+                        {reference.annotation}
+                      </p>
+                    ) : null}
+                    <a
+                      href={reference.url}
+                      className="mt-3 inline-flex text-cyan-700 hover:underline dark:text-cyan-300"
+                    >
+                      Open source
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <p className="rounded-md bg-stone-50 p-3 text-sm text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">
+                  Sources are being reviewed for this course.
+                </p>
+              )}
             </div>
           </Panel>
         </div>

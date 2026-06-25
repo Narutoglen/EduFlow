@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getResource } from "@/lib/eduflow";
+import { getResourceFromDb } from "@/lib/course-data";
 
 function fileSafe(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ resourceId: string }> },
 ) {
   const { resourceId } = await params;
-  const match = getResource(resourceId);
+  const match = await getResourceFromDb(resourceId);
   if (!match) notFound();
 
   const { course, lesson, resource } = match;

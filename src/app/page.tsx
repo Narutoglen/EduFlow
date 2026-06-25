@@ -4,21 +4,23 @@ import { CourseCard } from "@/components/course-card";
 import { PageShell } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, StatCard } from "@/components/ui";
 import {
-  categories,
-  courses,
-  enrollments,
-  userForRole,
-  users,
-} from "@/lib/mock-data";
-import { getPublishedCourses, platformStats } from "@/lib/eduflow";
+  getCategoriesFromDb,
+  getPublishedCoursesFromDb,
+  platformStatsFromDb,
+} from "@/lib/course-data";
+import { getCurrentUser } from "@/lib/session";
 
-export default function Home() {
-  const featured = getPublishedCourses().filter((course) => course.featured);
-  const stats = platformStats();
-  const student = userForRole("STUDENT");
+export default async function Home() {
+  const [publishedCourses, categories, stats, user] = await Promise.all([
+    getPublishedCoursesFromDb(),
+    getCategoriesFromDb(),
+    platformStatsFromDb(),
+    getCurrentUser(),
+  ]);
+  const featured = publishedCourses.filter((course) => course.featured);
 
   return (
-    <PageShell user={student} className="space-y-10">
+    <PageShell user={user ?? undefined} className="space-y-10">
       <section className="relative overflow-hidden rounded-lg bg-zinc-950 text-white">
         <Image
           src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80"
@@ -72,17 +74,17 @@ export default function Home() {
       <section className="grid gap-4 md:grid-cols-4">
         <StatCard
           label="Students"
-          value={`${users.filter((user) => user.role === "STUDENT").length}`}
+          value={`${stats.activeStudents}`}
           detail="Active learner profiles"
         />
         <StatCard
           label="Courses"
-          value={`${courses.length}`}
+          value={`${publishedCourses.length}`}
           detail={`${stats.pendingApprovals} awaiting approval`}
         />
         <StatCard
           label="Enrollments"
-          value={`${enrollments.length}`}
+          value={`${stats.enrollmentCount}`}
           detail="Free and paid course access"
         />
         <StatCard
@@ -142,7 +144,7 @@ export default function Home() {
             </span>
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">
               {
-                getPublishedCourses().filter(
+                publishedCourses.filter(
                   (course) => course.categoryId === category.id,
                 ).length
               }{" "}
