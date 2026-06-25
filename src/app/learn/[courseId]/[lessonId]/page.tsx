@@ -24,12 +24,8 @@ import {
   getPreviousLesson,
   getQuizForLesson,
 } from "@/lib/eduflow";
-<<<<<<< HEAD
 import { getCourseByIdFromDb, getEnrollmentFromDb } from "@/lib/course-data";
 import { requireRole } from "@/lib/session";
-=======
-import { requireUser } from "@/lib/session";
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 import { videoAdapter } from "@/lib/adapters";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -64,12 +60,7 @@ export default async function LearnPage({
   ]);
   if (!course) notFound();
 
-<<<<<<< HEAD
   const enrollment = await getEnrollmentFromDb(student.id, course.id);
-=======
-  const student = await requireUser(`/learn/${courseId}/${lessonId}`);
-  const enrollment = getEnrollment(student.id, course.id);
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const lesson = getLessons(course).find((item) => item.id === lessonId);
   if (!lesson) notFound();
 

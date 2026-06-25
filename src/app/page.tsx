@@ -16,7 +16,6 @@ import Image from "next/image";
 import { CourseCard } from "@/components/course-card";
 import { PageShell } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, StatCard } from "@/components/ui";
-<<<<<<< HEAD
 import {
   getCategoriesFromDb,
   getPublishedCoursesFromDb,
@@ -35,71 +34,6 @@ export default async function Home() {
 
   return (
     <PageShell user={user ?? undefined} className="space-y-10">
-=======
-import { categories, enrollments, users } from "@/lib/mock-data";
-import { getPublishedCourses, platformStats } from "@/lib/eduflow";
-import { getSessionUser, homeForRole } from "@/lib/session";
-
-const features = [
-  {
-    icon: <BookOpen size={18} />,
-    title: "Video courses",
-    body: "Structured modules, lesson player, notes, and downloadable resources.",
-  },
-  {
-    icon: <Award size={18} />,
-    title: "Quizzes & certificates",
-    body: "Auto-graded quizzes, assignment rubrics, and verifiable certificates.",
-  },
-  {
-    icon: <MessagesSquare size={18} />,
-    title: "Discussions",
-    body: "Per-lesson Q&A threads with pinned answers and TA moderation.",
-  },
-  {
-    icon: <Users size={18} />,
-    title: "Role workspaces",
-    body: "Tailored dashboards for students, lecturers, TAs, and admins.",
-  },
-];
-
-export default async function Home() {
-  const user = (await getSessionUser()) ?? undefined;
-  const featured = getPublishedCourses().filter((course) => course.featured);
-  const stats = platformStats();
-
-  return (
-<<<<<<< HEAD
-    <PageShell user={user} className="space-y-16">
-      {/* Hero */}
-      <section className="bg-aurora relative overflow-hidden rounded-3xl border border-zinc-200/60 px-6 py-16 text-center sm:px-10 dark:border-zinc-800">
-        <div className="mx-auto max-w-3xl animate-fade-in-up">
-          <Badge tone="brand">
-            <Sparkles size={14} />
-            Learn. Teach. Grow.
-          </Badge>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight text-zinc-950 sm:text-6xl dark:text-white">
-            The learning platform for{" "}
-            <span className="bg-gradient-to-r from-brand-600 to-violet-600 bg-clip-text text-transparent dark:from-brand-400 dark:to-violet-400">
-              modern teams
-            </span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-            Video courses, role dashboards, quizzes, assignments, discussions,
-            certificates, and admin workflows — all in one place.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {user ? (
-              <ButtonLink href={homeForRole(user.role)}>
-                <LayoutDashboard size={16} />
-                Go to your dashboard
-              </ButtonLink>
-            ) : (
-              <ButtonLink href="/auth/register">
-                Get started free
-=======
-    <PageShell user={student} className="space-y-10">
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
       <section className="relative overflow-hidden rounded-lg bg-zinc-950 text-white">
         <Image
           src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80"
@@ -171,27 +105,12 @@ export default async function Home() {
         />
         <StatCard
           label="Courses"
-<<<<<<< HEAD
           value={`${publishedCourses.length}`}
           detail={`${stats.pendingApprovals} awaiting approval`}
         />
         <StatCard
           label="Enrollments"
           value={`${stats.enrollmentCount}`}
-=======
-          value={`${getPublishedCourses().length}`}
-          detail="Published and growing"
-          icon={<BookOpen size={18} />}
-        />
-        <StatCard
-          label="Enrollments"
-<<<<<<< HEAD
-          value={`${enrollments.length * 318}`}
-          detail="Active learning paths"
-          icon={<GraduationCap size={18} />}
-=======
-          value={`${enrollments.length}`}
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
           detail="Free and paid course access"
 >>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
         />
@@ -278,7 +197,6 @@ export default async function Home() {
         </div>
       </section>
 
-<<<<<<< HEAD
       <section className="grid gap-4 md:grid-cols-4">
         {categories.map((category) => (
           <Panel key={category.id}>
@@ -297,32 +215,6 @@ export default async function Home() {
             </p>
           </Panel>
         ))}
-=======
-      {/* Categories */}
-      <section>
-        <h2 className="mb-6 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">
-          Explore by category
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => (
-            <Panel key={category.id} className="transition hover:-translate-y-0.5 hover:shadow-md">
-              <span
-                className={`${category.color} inline-flex rounded-full px-3 py-1 text-xs font-semibold`}
-              >
-                {category.name}
-              </span>
-              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">
-                {
-                  getPublishedCourses().filter(
-                    (course) => course.categoryId === category.id,
-                  ).length
-                }{" "}
-                published courses
-              </p>
-            </Panel>
-          ))}
-        </div>
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
       </section>
 
       {/* CTA */}

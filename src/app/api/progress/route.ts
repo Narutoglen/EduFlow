@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
-<<<<<<< HEAD
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-=======
-import { requireApiRole } from "@/lib/api-auth";
-import { recordLessonProgress } from "@/lib/assessments";
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
 // Personal notes export — requires a signed-in student (it is their own data).
 export async function GET(request: Request) {
@@ -80,9 +75,7 @@ export async function POST(request: Request) {
   if (!contentType.includes("application/json")) {
     return NextResponse.redirect(new URL(returnTo, request.url), 303);
   }
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 
-<<<<<<< HEAD
   return NextResponse.json({
     courseId,
     lessonId,
@@ -91,40 +84,4 @@ export async function POST(request: Request) {
     progressSynced: true,
     resumeFromSeconds: 0,
   });
-=======
-  const contentType = request.headers.get("content-type") ?? "";
-  const isForm = !contentType.includes("application/json");
-  const payload = isForm
-    ? Object.fromEntries((await request.formData()).entries())
-    : await request.json().catch(() => ({}));
-
-  const lessonId = String(payload.lessonId ?? "");
-  const courseId = String(payload.courseId ?? "");
-  if (!lessonId) {
-    return NextResponse.json(
-      { error: { code: "BAD_REQUEST", message: "lessonId is required." } },
-      { status: 400 },
-    );
-  }
-
-  const result = await recordLessonProgress({ studentId: auth.id, lessonId });
-
-  if (!result.ok) {
-    if (isForm) {
-      return NextResponse.redirect(new URL("/dashboard?flash=progress-error", request.url), 303);
-    }
-    return NextResponse.json({ error: { code: "FORBIDDEN", message: result.error } }, {
-      status: result.status,
-    });
-  }
-
-  if (isForm) {
-    const back = courseId
-      ? new URL(`/learn/${courseId}/${lessonId}`, request.url)
-      : new URL("/dashboard", request.url);
-    return NextResponse.redirect(back, 303);
-  }
-
-  return NextResponse.json({ lessonId, progressPercent: result.data.progressPercent });
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 }

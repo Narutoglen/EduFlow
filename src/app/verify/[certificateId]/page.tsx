@@ -2,14 +2,8 @@ import { notFound } from "next/navigation";
 import { Award, CheckCircle2, Download } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel } from "@/components/ui";
-<<<<<<< HEAD
 import { getCertificate, getCourseById, getInstructor, getUser } from "@/lib/eduflow";
 import { getCurrentUser } from "@/lib/session";
-=======
-import { canGradeCourseId } from "@/lib/authz";
-import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/lib/session";
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
 // Public certificate verification. Anyone with the verification id can confirm a
 // certificate is genuine (learner, course, lecturer, date), but the downloadable
@@ -35,22 +29,15 @@ export default async function VerifyCertificatePage({
   });
   if (!certificate) notFound();
 
-<<<<<<< HEAD
   const course = getCourseById(certificate.courseId);
   const student = getUser(certificate.studentId);
   if (!course || !student) notFound();
 
   const lecturer = getInstructor(course);
   const viewer = await getCurrentUser();
-=======
-  const viewer = await getSessionUser();
-  const canDownload = viewer
-    ? viewer.id === certificate.studentId ||
-      (await canGradeCourseId(viewer, certificate.courseId))
-    : false;
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
   return (
+    <PageShell user={viewer ?? undefined}>
     <PageShell user={viewer ?? undefined}>
       <PageTitle
         eyebrow="Certificate verification"

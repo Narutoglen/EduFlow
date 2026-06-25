@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-<<<<<<< HEAD
 import { storageAdapter } from "@/lib/adapters";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
-=======
-import { requireApiRole } from "@/lib/api-auth";
-import { recordAssignmentSubmission } from "@/lib/assessments";
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
 // Submit an assignment. The student is taken from the session and the write is
 // gated by enrollment, so a tampered assignmentId cannot attach work to another
@@ -24,43 +19,14 @@ export async function POST(request: Request) {
   const assignmentId = String(payload.assignmentId ?? "");
   const courseId = String(payload.courseId ?? "");
   const lessonId = String(payload.lessonId ?? "");
-<<<<<<< HEAD
   const student = await requireRole("STUDENT");
   const assignment = await prisma.assignment.findUnique({
     where: { id: assignmentId },
     include: { course: true, lesson: true },
   });
-=======
-  const assignment = courses
-    .flatMap((course) => course.assignments)
-    .find((item) => item.id === assignmentId);
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
-  const contentType = request.headers.get("content-type") ?? "";
-  const isForm = !contentType.includes("application/json");
-  const payload = isForm
-    ? Object.fromEntries((await request.formData()).entries())
-    : await request.json().catch(() => ({}));
-
-  const assignmentId = String(payload.assignmentId ?? "");
-  const body = String(payload.body ?? "");
-  if (!assignmentId) {
-    return NextResponse.json(
-      { error: { code: "BAD_REQUEST", message: "assignmentId is required." } },
-      { status: 400 },
-    );
-  }
-
-  const result = await recordAssignmentSubmission({ studentId: auth.id, assignmentId, body });
-
-  if (!result.ok) {
-    if (isForm) {
-      return NextResponse.redirect(new URL("/achievements?flash=assignment-error", request.url), 303);
-    }
-    return NextResponse.json({ error: { code: "FORBIDDEN", message: result.error } }, {
-      status: result.status,
-    });
+  if (!assignment) {
+    return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
   }
 
   if (isForm) {

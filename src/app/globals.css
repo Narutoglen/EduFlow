@@ -1,9 +1,5 @@
 @import "tailwindcss";
 
-<<<<<<< HEAD
-=======
-/* Class-based dark mode (toggled by the theme switch in the header). */
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
@@ -40,14 +36,11 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
-<<<<<<< HEAD
 .dark {
   --background: #121212;
   --foreground: #f4f4f5;
 }
 
-=======
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 * {
   box-sizing: border-box;
 }

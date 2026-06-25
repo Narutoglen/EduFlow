@@ -14,7 +14,6 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-<<<<<<< HEAD
   const principal = await getCurrentPrincipal();
   if (!principal) {
     return NextResponse.json(
@@ -22,10 +21,6 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   }
-=======
-  const principal = await requireAiPrincipal();
-  if (principal instanceof NextResponse) return principal;
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const { status, data } = await callAiService<unknown>({
     method: "POST",
     path: "/api/v1/ai/assistant/ask",

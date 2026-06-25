@@ -17,7 +17,6 @@ import { getStudentAchievements } from "@/lib/achievements";
 import { getStudentAnnouncements } from "@/lib/announcements";
 import {
   canIssueCertificate,
-<<<<<<< HEAD
 } from "@/lib/eduflow";
 import {
   getCourseByIdFromDb,
@@ -44,33 +43,6 @@ export default async function StudentDashboardPage() {
     getQuizAttemptsForStudentFromDb(student.id),
     getSubmissionsForStudentFromDb(student.id),
   ]);
-=======
-  getCourseById,
-  getEnrollmentsForStudent,
-  getLesson,
-  getNotifications,
-} from "@/lib/eduflow";
-import { requireRole } from "@/lib/session";
-
-export default async function StudentDashboardPage() {
-  const student = await requireRole(["STUDENT"]);
-  const enrollments = getEnrollmentsForStudent(student.id);
-  const announcements = await getStudentAnnouncements(student.id);
-  // Real graded work from the database, so quizzes a learner just took and
-  // assignments a lecturer just scored show up immediately.
-  const { scores } = await getStudentAchievements(student.id);
-  const enrolledCourses = enrollments
-    .map((enrollment) => ({
-      enrollment,
-      course: getCourseById(enrollment.courseId),
-    }))
-    .filter((item) => item.course);
-  const notifications = getNotifications(student.id);
-<<<<<<< HEAD
-=======
-  const quizAttempts = getQuizAttempts(student.id);
-  const submissions = getSubmissionsForStudent(student.id);
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const continueEnrollment =
     enrollments.find((enrollment) => enrollment.progressPercent < 100) ??
     enrollments[0];
@@ -146,11 +118,7 @@ export default async function StudentDashboardPage() {
         />
         <StatCard
           label="Streak"
-<<<<<<< HEAD
           value={`${longestStreak} days`}
-=======
-          value={`${enrollments.reduce((max, item) => Math.max(max, item.streakDays), 0)} days`}
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
           detail="Learning consistency"
         />
         <StatCard

@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import {
-<<<<<<< HEAD
   formatMoney,
   getCoursesForLecturer,
   getLessons,
@@ -22,36 +21,7 @@ import {
 } from "@/lib/eduflow";
 import { assignmentSubmissions, enrollments } from "@/lib/mock-data";
 import { requireRole } from "@/lib/session";
-=======
-  Badge,
-  ButtonLink,
-  EmptyState,
-  Panel,
-  ProgressBar,
-  StatCard,
-} from "@/components/ui";
-import { getLecturerAnnouncements } from "@/lib/announcements";
-import { formatMoney, getNotifications } from "@/lib/eduflow";
-import { getLecturerCourses, getLecturerStats } from "@/lib/lecturer-data";
-import { requireRole } from "@/lib/session";
-import { createAnnouncementAction } from "./actions";
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
-<<<<<<< HEAD
-export default async function LecturerDashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ created?: string; announce?: string }>;
-}) {
-  const lecturer = await requireRole(["LECTURER"]);
-  const params = await searchParams;
-
-  const courses = await getLecturerCourses(lecturer.id);
-  const [stats, announcements] = await Promise.all([
-    getLecturerStats(lecturer.id, courses),
-    getLecturerAnnouncements(lecturer.id),
-  ]);
-=======
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function valueOf(value: string | string[] | undefined) {

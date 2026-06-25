@@ -16,7 +16,6 @@ import {
 import { assignmentSubmissions, enrollments, users } from "@/lib/mock-data";
 import { requireRole } from "@/lib/session";
 
-<<<<<<< HEAD
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function valueOf(value: string | string[] | undefined) {
@@ -32,10 +31,6 @@ export default async function TaDashboardPage({
   const notice = valueOf(params.notice);
   const grading = valueOf(params.grade) === "submission";
   const ta = await requireRole("TA");
-=======
-export default async function TaDashboardPage() {
-  const ta = await requireRole(["TA"]);
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const courses = getCoursesForTa(ta.id);
   const courseIds = new Set(courses.map((course) => course.id));
   const roster = enrollments.filter((enrollment) => courseIds.has(enrollment.courseId));

@@ -1,7 +1,6 @@
 import { CheckCircle2, MailCheck } from "lucide-react";
 import Link from "next/link";
 import { PageShell, PageTitle } from "@/components/site-shell";
-<<<<<<< HEAD
 import { ButtonLink, Panel } from "@/components/ui";
 import { getCurrentUser } from "@/lib/session";
 
@@ -10,23 +9,6 @@ export default async function ResetPage() {
 
   return (
     <PageShell user={user ?? undefined}>
-=======
-import { Button, ButtonLink, Panel } from "@/components/ui";
-import { getSessionUser } from "@/lib/session";
-import { requestResetAction } from "../actions";
-
-export default async function ResetPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sent?: string }>;
-}) {
-  const params = await searchParams;
-  const user = (await getSessionUser()) ?? undefined;
-  const sent = params.sent === "1";
-
-  return (
-    <PageShell user={user}>
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
       <PageTitle
         eyebrow="Password reset"
 <<<<<<< HEAD

@@ -3,7 +3,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
 
-<<<<<<< HEAD
 import { prisma } from "./prisma";
 import { getCurrentUser } from "./session";
 import type { Principal } from "./ai-client";
@@ -40,65 +39,6 @@ export async function getCurrentPrincipal(): Promise<Principal | null> {
       ...assistedCourses.map((course) => course.courseId),
     ],
   };
-=======
-import { courses } from "./mock-data";
-import { getLessons } from "./eduflow";
-import { prisma } from "./prisma";
-import { getSessionUser } from "./session";
-import type { Principal } from "./ai-client";
-
-// Resolve the AI Principal from the AUTHENTICATED session (httpOnly cookie) and
-// the database — never from a client-supplied role. The minted service token
-// carries these enrolled/owned course ids, so the ai-service can scope retrieval
-// and ownership to exactly what this user may see (anti-IDOR). Returns null when
-// no valid session is present.
-export async function getCurrentPrincipal(): Promise<Principal | null> {
-  const user = await getSessionUser();
-  if (!user) return null;
-
-  let enrolledCourseIds: string[] = [];
-  let ownedCourseIds: string[] = [];
-
-  if (user.role === "STUDENT") {
-    const rows = await prisma.enrollment.findMany({
-      where: { studentId: user.id },
-      select: { courseId: true },
-    });
-    enrolledCourseIds = rows.map((r) => r.courseId);
-  } else if (user.role === "LECTURER") {
-    const rows = await prisma.course.findMany({
-      where: { lecturerId: user.id },
-      select: { id: true },
-    });
-    ownedCourseIds = rows.map((r) => r.id);
-  } else if (user.role === "TA") {
-    const rows = await prisma.courseAssistant.findMany({
-      where: { userId: user.id },
-      select: { courseId: true },
-    });
-    ownedCourseIds = rows.map((r) => r.courseId);
-  } else if (user.role === "ADMIN") {
-    const rows = await prisma.course.findMany({ select: { id: true } });
-    ownedCourseIds = rows.map((r) => r.id);
-  }
-
-  return { userId: user.id, role: user.role, enrolledCourseIds, ownedCourseIds };
-}
-
-/**
- * Require an authenticated AI principal. Returns the `Principal`, or a 401
- * `NextResponse` the route should return immediately when no session is present.
- */
-export async function requireAiPrincipal(): Promise<Principal | NextResponse> {
-  const principal = await getCurrentPrincipal();
-  if (!principal) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHENTICATED", message: "Sign in required." } },
-      { status: 401 },
-    );
-  }
-  return principal;
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 }
 
 export type LessonContent = {

@@ -1,7 +1,6 @@
 import { Check, DollarSign, Edit3, Plus, RotateCcw, Settings, ShieldAlert, Trash2, UserCog, X } from "lucide-react";
 import Image from "next/image";
 import { PageShell, PageTitle } from "@/components/site-shell";
-<<<<<<< HEAD
 import { Badge, ButtonLink, Panel, ProgressBar, StatCard } from "@/components/ui";
 import {
   formatMoney,
@@ -16,29 +15,12 @@ import {
   platformStatsFromDb,
 } from "@/lib/course-data";
 import { requireRole } from "@/lib/session";
-=======
-import { Badge, ButtonLink, EmptyState, Panel, ProgressBar, StatCard } from "@/components/ui";
-import { formatMoney, platformStats, roleLabel } from "@/lib/eduflow";
-import { categories, courses, enrollments } from "@/lib/mock-data";
-import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/session";
-import { approveCourseAction, rejectCourseAction } from "./actions";
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
-<<<<<<< HEAD
-const reviewMessages: Record<string, { tone: "ok" | "error"; text: string }> = {
-  approved: { tone: "ok", text: "Course approved and published." },
-  rejected: { tone: "ok", text: "Course rejected and removed from the queue." },
-  missing: { tone: "error", text: "That course no longer exists." },
-  invalid: { tone: "error", text: "Something went wrong — no course was selected." },
-};
-=======
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function valueOf(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 
 function noticeText(notice?: string) {
   return {
@@ -69,7 +51,6 @@ export default async function AdminDashboardPage({
   const admin = await requireRole("ADMIN");
   const params = await searchParams;
   const notice = valueOf(params.notice);
-<<<<<<< HEAD
   const editId = valueOf(params.edit);
   const isCreating = valueOf(params.new) === "course";
 
@@ -95,23 +76,6 @@ export default async function AdminDashboardPage({
   );
   const visibleCourses = courseRows.filter((row) => !row.record.deletedAt);
   const message = noticeText(notice);
-=======
-  const admin = userForRole("ADMIN");
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
-  const stats = platformStats();
-
-  // Course queue + counts come from Postgres so approve/reject take effect live.
-  // Real accounts from the database — seeded + self-registered users.
-  const [dbUsers, pending, publishedCount] = await Promise.all([
-    prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.course.findMany({
-      where: { status: "PENDING_REVIEW" },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, slug: true, title: true, description: true, status: true },
-    }),
-    prisma.course.count({ where: { status: "PUBLISHED" } }),
-  ]);
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
 
   return (
     <PageShell user={admin}>
@@ -127,30 +91,7 @@ export default async function AdminDashboardPage({
         }
       />
 
-<<<<<<< HEAD
       {message ? (
-=======
-<<<<<<< HEAD
-      {review ? (
-        <div
-          className={
-            review.tone === "ok"
-              ? "mb-6 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
-              : "mb-6 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
-          }
-        >
-          {review.text}
-        </div>
-      ) : null}
-
-      <section className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Active users" value={`${dbUsers.length}`} detail="Registered accounts (live DB)" />
-        <StatCard label="Active courses" value={`${publishedCount}`} detail="Published catalog" />
-        <StatCard label="Revenue" value={formatMoney(stats.monthlyRevenue)} detail="Mock monthly Stripe" />
-        <StatCard label="Pending" value={`${pending.length}`} detail="Course approvals" />
-=======
-      {notice ? (
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
         <Panel
           className={
             notice === "course-invalid" || notice === "revisions-requested"
@@ -375,7 +316,6 @@ export default async function AdminDashboardPage({
               <ShieldAlert className="text-amber-600" size={20} />
               <h2 className="text-xl font-semibold">Course approval queue</h2>
             </div>
-<<<<<<< HEAD
             <div className="space-y-4">
               {pending.map(({ course }) => (
                 <div key={course.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
@@ -383,57 +323,9 @@ export default async function AdminDashboardPage({
                     <div>
                       <p className="font-semibold">{course.title}</p>
                       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{course.description}</p>
-=======
-            {pending.length === 0 ? (
-              <EmptyState
-                title="Queue is clear"
-                body="No courses are awaiting review right now. Submitted courses will appear here for approval."
-              />
-            ) : (
-              <div className="space-y-4">
-                {pending.map((course) => (
-                  <div key={course.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold">{course.title}</p>
-                        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                          {course.description}
-                        </p>
-                      </div>
-                      <Badge tone="amber">{course.status.replace("_", " ")}</Badge>
                     </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <ButtonLink href={`/courses/${course.slug}`} variant="secondary">
-                        Preview
-                      </ButtonLink>
-                      <form action={approveCourseAction}>
-                        <input type="hidden" name="courseId" value={course.id} />
-                        <button
-                          type="submit"
-                          className="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500"
-                        >
-                          <Check size={16} />
-                          Approve
-                        </button>
-                      </form>
-                      <form action={rejectCourseAction}>
-                        <input type="hidden" name="courseId" value={course.id} />
-                        <button
-                          type="submit"
-                          className="inline-flex min-h-10 items-center gap-2 rounded-md border border-rose-200 px-4 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 dark:border-rose-900/60 dark:text-rose-300 dark:hover:bg-rose-950/40"
-                        >
-                          <X size={16} />
-                          Reject
-                        </button>
-                      </form>
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
-                    </div>
+                    <Badge tone="amber">{course.status.replace("_", " ")}</Badge>
                   </div>
-<<<<<<< HEAD
-                ))}
-              </div>
-            )}
-=======
                   <div className="mt-4 flex flex-wrap gap-2">
                     <ButtonLink href={`/courses/${course.slug}`} variant="secondary">Preview</ButtonLink>
                     <form action="/api/admin/courses" method="post">
@@ -445,6 +337,61 @@ export default async function AdminDashboardPage({
                       </button>
                     </form>
                     <ButtonLink href={`/admin?edit=${course.id}`} variant="secondary">Edit</ButtonLink>
+                  </div>
+                </div>
+              ))}
+              {!pending.length ? (
+                <p className="rounded-md bg-stone-50 p-3 text-sm text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">No courses are waiting for approval.</p>
+              ) : null}
+            </div>
+          </Panel>
+
+          <Panel>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="text-cyan-700" size={20} />
+                <h2 className="text-xl font-semibold">Course management</h2>
+              </div>
+              <ButtonLink href="/admin?new=course" variant="secondary">Add course</ButtonLink>
+            </div>
+            <div className="space-y-4">
+              {courseRows.map(({ course, record }) => (
+                <div key={course.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{course.title}</p>
+                        <Badge tone={record.deletedAt ? "red" : course.status === "PUBLISHED" ? "green" : "amber"}>
+                          {record.deletedAt ? "DELETED" : course.status.replace("_", " ")}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                        {course.modules.length} modules, {getLessons(course).length} lessons, {course.references?.length ?? 0} references
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {!record.deletedAt ? <ButtonLink href={`/courses/${course.slug}`} variant="secondary">Preview</ButtonLink> : null}
+                      <ButtonLink href={`/admin?edit=${course.id}`} variant="secondary">Edit</ButtonLink>
+                      {record.deletedAt ? (
+                        <form action="/api/admin/courses" method="post">
+                          <input type="hidden" name="action" value="restore" />
+                          <input type="hidden" name="courseId" value={course.id} />
+                          <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50">
+                            <RotateCcw size={16} />
+                            Restore
+                          </button>
+                        </form>
+                      ) : (
+                        <form action="/api/admin/courses" method="post">
+                          <input type="hidden" name="action" value="delete" />
+                          <input type="hidden" name="courseId" value={course.id} />
+                          <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700">
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -526,27 +473,7 @@ export default async function AdminDashboardPage({
                     <tr key={user.id}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-<<<<<<< HEAD
                           <Image src={user.avatarUrl} alt="" width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
-=======
-<<<<<<< HEAD
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={
-                              user.avatarUrl ??
-                              "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=80&q=80"
-                            }
-                            alt=""
-=======
-                          <Image
-                            src={user.avatarUrl}
-                            alt=""
-                            width={36}
-                            height={36}
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
-                            className="h-9 w-9 rounded-full object-cover"
-                          />
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
                           <div>
                             <p className="font-semibold">{user.name}</p>
                             <p className="text-zinc-500">{user.email}</p>
@@ -601,9 +528,6 @@ export default async function AdminDashboardPage({
               <h2 className="text-xl font-semibold">Global settings</h2>
             </div>
             <div className="mt-4 space-y-3 text-sm">
-<<<<<<< HEAD
-              {["Payment gateway: Stripe", "SSO: Google OAuth", "Email: transactional provider", "Default storage: 5 GB / course"].map((item) => (
-=======
               {[
                 "Auth: Prisma sessions",
                 "Database: local Docker Postgres",

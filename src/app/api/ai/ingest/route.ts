@@ -14,7 +14,6 @@ export async function POST(request: Request) {
   if (lessons.length === 0) {
     return NextResponse.json({ error: { code: "NOT_FOUND", message: "Course not found" } }, { status: 404 });
   }
-<<<<<<< HEAD
   const principal = await getCurrentPrincipal();
   if (!principal) {
     return NextResponse.json(
@@ -22,10 +21,6 @@ export async function POST(request: Request) {
       { status: 401 },
     );
   }
-=======
-  const principal = await requireAiPrincipal();
-  if (principal instanceof NextResponse) return principal;
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   const results = await Promise.all(
     lessons.map((l) =>
       callAiService<{ jobId?: string }>({

@@ -30,7 +30,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-<<<<<<< HEAD
     <html lang="en" className="h-full scroll-smooth dark" suppressHydrationWarning>
       <body className="min-h-full bg-stone-50 text-zinc-950 antialiased dark:bg-zinc-950 dark:text-zinc-50">
         <script
@@ -39,16 +38,6 @@ export default function RootLayout({
               "try{var t=localStorage.getItem('eduflow_theme')||'dark';document.documentElement.classList.toggle('dark',t!=='light');document.documentElement.dataset.theme=t;}catch(e){document.documentElement.classList.add('dark')}",
           }}
         />
-=======
-    <html lang="en" className="h-full scroll-smooth" suppressHydrationWarning>
-      <body className="min-h-full bg-background text-foreground antialiased">
-        {/* Runs before paint to apply the saved/system theme without a flash.
-            next/script (beforeInteractive) is the supported way to inject an
-            inline pre-hydration script; a raw <script> trips a React warning. */}
-        <Script id="theme-init" strategy="beforeInteractive">
-          {themeScript}
-        </Script>
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
         {children}
       </body>
     </html>

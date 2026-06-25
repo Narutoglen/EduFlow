@@ -149,16 +149,8 @@ export default async function LoginPage({
                 <input
                   name="email"
                   type="email"
-<<<<<<< HEAD
                   autoComplete="email"
                   className="w-full bg-transparent outline-none"
-=======
-                  required
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  defaultValue="amina@student.eduflow.test"
-                  className="w-full bg-transparent py-2.5 text-sm outline-none"
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
                 />
               </span>
             </label>
@@ -169,16 +161,8 @@ export default async function LoginPage({
                 <input
                   name="password"
                   type="password"
-<<<<<<< HEAD
                   autoComplete="current-password"
                   className="w-full bg-transparent outline-none"
-=======
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  defaultValue="Student123!"
-                  className="w-full bg-transparent py-2.5 text-sm outline-none"
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
                 />
               </span>
             </label>
@@ -213,7 +197,6 @@ export default async function LoginPage({
             <h2 className="text-xl font-semibold">New to EduFlow?</h2>
           </div>
           <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-300">
-<<<<<<< HEAD
             Create an account to enroll in courses, receive notifications, and
             track your progress. The first registered user on a fresh
             installation becomes the platform administrator.
@@ -226,36 +209,5 @@ export default async function LoginPage({
         </Panel>
       </section>
     </PageShell>
-=======
-            Use a role shortcut to review the experience from a learner,
-            lecturer, teaching assistant, or administrator perspective.
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
-          </p>
-
-          <div className="mt-8 rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
-            <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-              <Sparkles size={15} className="text-brand-500" />
-              Demo accounts
-            </div>
-            <div className="space-y-1.5 text-xs">
-              {demoAccounts.map((account) => (
-                <div
-                  key={account.email}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 font-mono text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300"
-                >
-                  <span className="font-sans font-semibold text-zinc-700 dark:text-zinc-200">
-                    {account.role}
-                  </span>
-                  <span className="truncate">
-                    {account.email} · {account.password}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
->>>>>>> 1676408760a8ccb2072fe64933b6be5d1efca3e9
   );
 }
