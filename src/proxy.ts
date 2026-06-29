@@ -21,6 +21,12 @@ const PROTECTED_PAGE_PREFIXES = [
   "/admin",
 ];
 
+const PUBLIC_API_PATHS = new Set([
+  "/api/ai/health",
+  "/api/auth/register",
+  "/api/auth/session",
+]);
+
 /** Best-effort read of the token's expiry (base64url(userId.expiresAt).sig). */
 function tokenExpiry(token: string): number | null {
   try {
@@ -50,9 +56,9 @@ export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const live = hasLiveSession(req);
 
-  // API namespace: 401 without a session cookie. Health stays public.
+  // API namespace: registration, login, and health must work before a session exists.
   if (pathname.startsWith("/api/")) {
-    if (pathname === "/api/ai/health") return NextResponse.next();
+    if (PUBLIC_API_PATHS.has(pathname)) return NextResponse.next();
     if (!live) {
       return NextResponse.json(
         { error: { code: "UNAUTHENTICATED", message: "Sign in required." } },
