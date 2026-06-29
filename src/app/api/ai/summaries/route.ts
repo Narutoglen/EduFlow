@@ -6,14 +6,14 @@ import { requireAiPrincipal, resolveLessonContent } from "@/lib/ai-session";
 // principal + the lesson content it owns, then forwards the enriched request to ai-service.
 
 export async function GET(request: Request) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const url = new URL(request.url);
   const lessonId = url.searchParams.get("lessonId");
   const resourceId = url.searchParams.get("resourceId");
   if (!lessonId && !resourceId) {
     return badRequest("Provide lessonId or resourceId");
   }
-  const principal = await getCurrentPrincipal();
-  if (!principal) return unauthorized();
   const qs = lessonId ? `lessonId=${encodeURIComponent(lessonId)}` : `resourceId=${encodeURIComponent(resourceId!)}`;
   const { status, data } = await callAiService<unknown>({
     method: "GET",
@@ -24,6 +24,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const body = await request.json().catch(() => null);
   const lessonId: string | undefined = body?.lessonId;
   if (!lessonId) return badRequest("lessonId is required");
@@ -31,8 +33,6 @@ export async function POST(request: Request) {
   const resolved = await resolveLessonContent(lessonId);
   if (!resolved) return notFound("Lesson not found");
 
-  const principal = await getCurrentPrincipal();
-  if (!principal) return unauthorized();
   const { status, data } = await callAiService<unknown>({
     method: "POST",
     path: "/api/v1/ai/summaries",
@@ -52,10 +52,4 @@ function badRequest(message: string) {
 }
 function notFound(message: string) {
   return NextResponse.json({ error: { code: "NOT_FOUND", message } }, { status: 404 });
-}
-function unauthorized() {
-  return NextResponse.json(
-    { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
-    { status: 401 },
-  );
 }

@@ -41,6 +41,16 @@ export async function getCurrentPrincipal(): Promise<Principal | null> {
   };
 }
 
+export async function requireAiPrincipal(): Promise<Principal | NextResponse> {
+  const principal = await getCurrentPrincipal();
+  if (principal) return principal;
+
+  return NextResponse.json(
+    { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
+    { status: 401 },
+  );
+}
+
 export type LessonContent = {
   courseId: string;
   title: string;

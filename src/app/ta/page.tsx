@@ -1,8 +1,6 @@
 import {
-  CheckCircle2,
   MessageSquare,
   NotebookPen,
-  Send,
   UsersRound,
 } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
@@ -16,20 +14,7 @@ import {
 import { assignmentSubmissions, enrollments, users } from "@/lib/mock-data";
 import { requireRole } from "@/lib/session";
 
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-function valueOf(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-export default async function TaDashboardPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const params = await searchParams;
-  const notice = valueOf(params.notice);
-  const grading = valueOf(params.grade) === "submission";
+export default async function TaDashboardPage() {
   const ta = await requireRole("TA");
   const courses = getCoursesForTa(ta.id);
   const courseIds = new Set(courses.map((course) => course.id));

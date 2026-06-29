@@ -10,13 +10,6 @@ export async function GET(
   const principal = await requireAiPrincipal();
   if (principal instanceof NextResponse) return principal;
   const { id } = await params;
-  const principal = await getCurrentPrincipal();
-  if (!principal) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
-      { status: 401 },
-    );
-  }
   const { status, data } = await callAiService<unknown>({
     method: "GET",
     path: `/api/v1/ai/assistant/conversations/${encodeURIComponent(id)}/messages`,

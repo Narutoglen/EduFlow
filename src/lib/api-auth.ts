@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { getSessionUser } from "./session";
+import { getCurrentUser } from "./session";
 import type { Role, User } from "./types";
 
 // API-layer access control. Route handlers derive identity ONLY from the signed
@@ -24,7 +24,7 @@ function deny(status: 401 | 403, error: AuthError) {
  *   const user = auth; // authenticated
  */
 export async function requireApiUser(): Promise<User | NextResponse> {
-  const user = await getSessionUser();
+  const user = await getCurrentUser();
   if (!user) {
     return deny(401, { code: "UNAUTHENTICATED", message: "Sign in required." });
   }

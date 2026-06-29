@@ -7,7 +7,7 @@ import { homeForRole, requireUser } from "@/lib/session";
 
 export default async function ProfilePage() {
   // Any signed-in user can view their own profile; redirects to login otherwise.
-  const user = await requireUser("/profile");
+  const user = await requireUser();
 
   // The session user covers most fields; fetch createdAt for "member since".
   const account = await prisma.user.findUnique({

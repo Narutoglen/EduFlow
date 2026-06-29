@@ -4,14 +4,7 @@ import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 
-// Submit an assignment. The student is taken from the session and the write is
-// gated by enrollment, so a tampered assignmentId cannot attach work to another
-// course or another learner.
 export async function POST(request: Request) {
-<<<<<<< HEAD
-  const auth = await requireApiRole(["STUDENT"]);
-  if (auth instanceof NextResponse) return auth;
-=======
   const contentType = request.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
     ? await request.json()
@@ -29,14 +22,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
   }
 
-  if (isForm) {
-    return NextResponse.redirect(new URL("/achievements?flash=assignment-submitted", request.url), 303);
-  }
-
-<<<<<<< HEAD
-  return NextResponse.json(
-    { id: result.data.submissionId, assignmentId, status: result.data.status },
-=======
   const upload = await storageAdapter.createUploadUrl(`${assignmentId}.txt`);
   const submission = await prisma.assignmentSubmission.create({
     data: {
@@ -77,7 +62,6 @@ export async function POST(request: Request) {
       upload,
       submittedText: String(payload.body ?? ""),
     },
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
     { status: 201 },
   );
 }

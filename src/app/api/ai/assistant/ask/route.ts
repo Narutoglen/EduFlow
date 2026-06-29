@@ -5,6 +5,8 @@ import { getCourseLessonTitles, requireAiPrincipal } from "@/lib/ai-session";
 // BFF: RAG question. Enriches with a lessonId->title map so citations carry titles. ai-service
 // enforces course-scoped retrieval + conversation ownership.
 export async function POST(request: Request) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const body = await request.json().catch(() => null);
   const courseId: string | undefined = body?.courseId;
   const question: string | undefined = body?.question;
@@ -12,13 +14,6 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: { code: "BAD_REQUEST", message: "courseId and question are required" } },
       { status: 400 },
-    );
-  }
-  const principal = await getCurrentPrincipal();
-  if (!principal) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
-      { status: 401 },
     );
   }
   const { status, data } = await callAiService<unknown>({

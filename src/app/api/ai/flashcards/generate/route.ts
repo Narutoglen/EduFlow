@@ -5,6 +5,8 @@ import { requireAiPrincipal, resolveLessonContent } from "@/lib/ai-session";
 // BFF: generate a flashcard deck (contract §3). Browser sends { lessonId, count }; BFF enriches
 // with the lesson content it owns before forwarding to ai-service.
 export async function POST(request: Request) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const body = await request.json().catch(() => null);
   const lessonId: string | undefined = body?.lessonId;
   const count = Number(body?.count ?? 10);
@@ -14,13 +16,6 @@ export async function POST(request: Request) {
   const resolved = await resolveLessonContent(lessonId);
   if (!resolved) {
     return NextResponse.json({ error: { code: "NOT_FOUND", message: "Lesson not found" } }, { status: 404 });
-  }
-  const principal = await getCurrentPrincipal();
-  if (!principal) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
-      { status: 401 },
-    );
   }
   const { status, data } = await callAiService<unknown>({
     method: "POST",
