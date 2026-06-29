@@ -39,9 +39,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-
-  // Self-contained server output for Docker/production deployment.
-  output: "standalone",
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
