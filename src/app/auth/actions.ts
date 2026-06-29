@@ -1,10 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { hashPassword, verifyPassword } from "@/lib/password";
+import { hashPassword, verifyPassword } from "@/lib/security";
 import { prisma } from "@/lib/prisma";
 import {
   clearSessionCookie,
+  createUserSession,
   homeForRole,
   setSessionCookie,
 } from "@/lib/session";
@@ -39,7 +40,8 @@ export async function loginAction(formData: FormData) {
     redirect(`/auth/login?error=invalid${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   }
 
-  await setSessionCookie(user.id);
+  const session = await createUserSession(user.id);
+  await setSessionCookie(session.token, session.expiresAt);
   redirect(next ?? homeForRole(user.role));
 }
 
@@ -82,7 +84,8 @@ export async function registerAction(formData: FormData) {
     redirect("/auth/register?error=unavailable");
   }
 
-  await setSessionCookie(user.id);
+  const session = await createUserSession(user.id);
+  await setSessionCookie(session.token, session.expiresAt);
   redirect(homeForRole(user.role));
 }
 

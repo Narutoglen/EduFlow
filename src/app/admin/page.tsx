@@ -39,13 +39,6 @@ function noticeText(notice?: string) {
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-<<<<<<< HEAD
-  searchParams: Promise<{ review?: string }>;
-}) {
-  const admin = await requireRole(["ADMIN"]);
-  const params = await searchParams;
-  const review = params.review ? reviewMessages[params.review] : undefined;
-=======
   searchParams: SearchParams;
 }) {
   const admin = await requireRole("ADMIN");
@@ -306,7 +299,6 @@ export default async function AdminDashboardPage({
         <StatCard label="Active courses" value={`${stats.publishedCourses}`} detail="Published catalog" />
         <StatCard label="Revenue" value={formatMoney(stats.monthlyRevenue)} detail="Monthly course sales" />
         <StatCard label="Pending" value={`${stats.pendingApprovals}`} detail="Course approvals" />
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -395,63 +387,7 @@ export default async function AdminDashboardPage({
                   </div>
                 </div>
               ))}
-              {!pending.length ? (
-                <p className="rounded-md bg-stone-50 p-3 text-sm text-zinc-600 dark:bg-zinc-950 dark:text-zinc-300">No courses are waiting for approval.</p>
-              ) : null}
             </div>
-          </Panel>
-
-          <Panel>
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <Edit3 className="text-cyan-700" size={20} />
-                <h2 className="text-xl font-semibold">Course management</h2>
-              </div>
-              <ButtonLink href="/admin?new=course" variant="secondary">Add course</ButtonLink>
-            </div>
-            <div className="space-y-4">
-              {courseRows.map(({ course, record }) => (
-                <div key={course.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold">{course.title}</p>
-                        <Badge tone={record.deletedAt ? "red" : course.status === "PUBLISHED" ? "green" : "amber"}>
-                          {record.deletedAt ? "DELETED" : course.status.replace("_", " ")}
-                        </Badge>
-                      </div>
-                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
-                        {course.modules.length} modules, {getLessons(course).length} lessons, {course.references?.length ?? 0} references
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {!record.deletedAt ? <ButtonLink href={`/courses/${course.slug}`} variant="secondary">Preview</ButtonLink> : null}
-                      <ButtonLink href={`/admin?edit=${course.id}`} variant="secondary">Edit</ButtonLink>
-                      {record.deletedAt ? (
-                        <form action="/api/admin/courses" method="post">
-                          <input type="hidden" name="action" value="restore" />
-                          <input type="hidden" name="courseId" value={course.id} />
-                          <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50">
-                            <RotateCcw size={16} />
-                            Restore
-                          </button>
-                        </form>
-                      ) : (
-                        <form action="/api/admin/courses" method="post">
-                          <input type="hidden" name="action" value="delete" />
-                          <input type="hidden" name="courseId" value={course.id} />
-                          <button className="inline-flex min-h-10 items-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 text-sm font-semibold text-red-700">
-                            <Trash2 size={16} />
-                            Delete
-                          </button>
-                        </form>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
           </Panel>
 
           <Panel>
@@ -469,7 +405,7 @@ export default async function AdminDashboardPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                  {dbUsers.map((user) => (
+                  {users.map((user) => (
                     <tr key={user.id}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -534,7 +470,6 @@ export default async function AdminDashboardPage({
                 "References: APA 7 course sources",
                 "Storage: local resource routes",
               ].map((item) => (
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
                 <div key={item} className="rounded-lg bg-stone-50 p-3 dark:bg-zinc-950">
                   {item}
                 </div>

@@ -2,17 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 
-// Personal notes export — requires a signed-in student (it is their own data).
 export async function GET(request: Request) {
-<<<<<<< HEAD
-  const auth = await requireApiRole(["STUDENT"]);
-  if (auth instanceof NextResponse) return auth;
-
-  if (new URL(request.url).searchParams.get("export") === "notes") {
-=======
   const url = new URL(request.url);
   if (url.searchParams.get("export") === "notes") {
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
     return new Response("EduFlow lesson notes\n", {
       headers: {
         "content-type": "text/plain; charset=utf-8",
@@ -20,16 +12,11 @@ export async function GET(request: Request) {
       },
     });
   }
+
   return NextResponse.json({ status: "progress-service-ready" });
 }
 
-// Mark a lesson complete. The student comes from the session; progress is only
-// recorded when they are enrolled in the lesson's course.
 export async function POST(request: Request) {
-<<<<<<< HEAD
-  const auth = await requireApiRole(["STUDENT"]);
-  if (auth instanceof NextResponse) return auth;
-=======
   const contentType = request.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
     ? await request.json()

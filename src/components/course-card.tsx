@@ -16,15 +16,6 @@ export function CourseCard({
   const instructor = getInstructor(course);
 
   return (
-<<<<<<< HEAD
-    <article className="group overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm shadow-zinc-900/5 transition hover:-translate-y-1 hover:shadow-lg hover:shadow-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900/70">
-      <Link href={`/courses/${course.slug}`} className="block overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={course.thumbnailUrl}
-          alt=""
-          className="h-44 w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-=======
     <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900">
       <Link href={`/courses/${course.slug}`} className="relative block h-44">
         <Image
@@ -33,7 +24,6 @@ export function CourseCard({
           fill
           sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
           className="object-cover"
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
         />
       </Link>
       <div className="space-y-4 p-5">
@@ -46,7 +36,7 @@ export function CourseCard({
         <div>
           <Link
             href={`/courses/${course.slug}`}
-            className="text-lg font-semibold leading-7 text-zinc-950 hover:text-brand-600 dark:text-white dark:hover:text-brand-300"
+            className="text-lg font-semibold leading-7 text-zinc-950 hover:text-cyan-700 dark:text-white dark:hover:text-cyan-300"
           >
             {course.title}
           </Link>

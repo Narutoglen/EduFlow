@@ -5,6 +5,8 @@ import { getCourseLessons, requireAiPrincipal } from "@/lib/ai-session";
 // BFF: ensure a course's lessons are embedded for RAG. Resolves lesson text (LMS-owned) and sends
 // each lesson to ai-service ingest — no server-side URL fetch, so no SSRF surface here. Idempotent.
 export async function POST(request: Request) {
+  const principal = await requireAiPrincipal();
+  if (principal instanceof NextResponse) return principal;
   const body = await request.json().catch(() => null);
   const courseId: string | undefined = body?.courseId;
   if (!courseId) {
@@ -13,13 +15,6 @@ export async function POST(request: Request) {
   const lessons = await getCourseLessons(courseId);
   if (lessons.length === 0) {
     return NextResponse.json({ error: { code: "NOT_FOUND", message: "Course not found" } }, { status: 404 });
-  }
-  const principal = await getCurrentPrincipal();
-  if (!principal) {
-    return NextResponse.json(
-      { error: { code: "UNAUTHORIZED", message: "Sign in to use AI tools" } },
-      { status: 401 },
-    );
   }
   const results = await Promise.all(
     lessons.map((l) =>

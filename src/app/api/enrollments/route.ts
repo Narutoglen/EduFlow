@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { requireApiRole } from "@/lib/api-auth";
 import { notifyAssignmentDeadlines } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/session";
 
 // Enroll the SIGNED-IN student in a published course. The studentId is taken from
 // the session, never the request, so a caller cannot enroll someone else. Free
@@ -15,37 +15,35 @@ export async function POST(request: Request) {
     ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
   const courseId = String(payload.courseId ?? "course-data-literacy");
-  const student = await requireRole("STUDENT");
   const course = await prisma.course.findFirst({ where: { id: courseId, deletedAt: null } });
   if (!course) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }
   const existing = await prisma.enrollment.findUnique({
-    where: { studentId_courseId: { studentId: student.id, courseId } },
+    where: { studentId_courseId: { studentId: auth.id, courseId } },
   });
   const enrollment = await prisma.enrollment.upsert({
-    where: { studentId_courseId: { studentId: student.id, courseId } },
+    where: { studentId_courseId: { studentId: auth.id, courseId } },
     update: {},
     create: {
-      studentId: student.id,
+      studentId: auth.id,
       courseId,
       paid: course.priceCents === 0,
     },
   });
   if (!existing) {
-    await notifyAssignmentDeadlines(student.id, courseId);
+    await notifyAssignmentDeadlines(auth.id, courseId);
   }
 
   return NextResponse.json(
     {
       id: enrollment.id,
       courseId,
-      studentId: student.id,
+      studentId: auth.id,
       status: "ENROLLED",
       progressPercent: enrollment.progressPercent,
       paid: enrollment.paid,
     },
-    { status: 201 },
     { status: 201 },
   );
 }
