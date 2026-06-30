@@ -13,7 +13,12 @@ if (existsSync(envPath)) {
   }
 }
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const connectionString = process.env.DATABASE_URL ?? process.env.NETLIFY_DB_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL or NETLIFY_DB_URL must be set.");
+}
+
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 const DEFAULT_VIDEO = "";

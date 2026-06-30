@@ -1,0 +1,8 @@
+[build]
+command = "npm run build"
+publish = ".next"
+
+[database]
+
+[database.migrations]
+path = "prisma/migrations"

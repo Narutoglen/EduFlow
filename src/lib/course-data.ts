@@ -271,7 +271,7 @@ export async function getSubmissionsForStudentFromDb(studentId: string): Promise
   }));
 }
 
-export async function getCourseRecordsForAdmin() {
+export async function getCourseRecordsForAdmin(): Promise<CourseRecord[]> {
   return prisma.course.findMany({
     include: courseInclude,
     orderBy: [{ deletedAt: "asc" }, { updatedAt: "desc" }],

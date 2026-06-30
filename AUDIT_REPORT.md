@@ -1,138 +1,117 @@
 # EduFlow Audit Report
 
-Updated: 2026-06-22
+Updated: 2026-06-30
 
-## Current Implementation Snapshot
+## Executive Status
 
-This report reflects the current working tree after the registration, cookie, notification, and theme pass.
+Status: **Preview build passed; production is not ready for promotion.**
 
-- Demo login shortcuts and prefilled seeded credentials have been removed from the auth UI.
-- `prisma/seed.mjs` no longer creates student/admin demo logins, demo passwords, enrollments, certificates, quiz attempts, assignment submissions, or demo notifications.
-- The seed still creates locked platform staff records needed for seeded course ownership and assistance. These records have no password hash and cannot sign in through the normal password flow.
-- Public registration is implemented at `/auth/register` with `/api/auth/register`.
-- First active registered user becomes `ADMIN` on a fresh seeded database; later public registrations become `STUDENT`.
-- Registration creates a Prisma user, hashes the password, creates a persisted session, sets the httpOnly session cookie, creates an in-app notification, and sends a best-effort email notification.
-- Users can opt into email notifications during registration. Email sending uses the existing local console adapter or `EMAIL_WEBHOOK_URL` if configured.
-- `.env` contains local `EMAIL_FROM` and blank `EMAIL_WEBHOOK_URL` values; set the webhook to a real mail provider endpoint to deliver to inboxes.
-- Assignment due-date notifications are created when a student enrolls in a course.
-- Quiz/exam submission and assignment submission now write to Prisma and create in-app plus email notifications.
-- Student dashboard now reads notifications, quiz attempts, and assignment submissions from Prisma instead of mock data.
-- First-visit cookie consent banner is implemented with "Essential only" and "Accept cookies" choices.
-- Dark mode remains default. A user-facing light/dark toggle now stores preference in `localStorage` and applies a class-based Tailwind dark mode.
-- README has been updated to remove demo-account instructions and describe registration.
+EduFlow now builds successfully on Vercel from a clean Git clone. The original Vercel failure was caused by Prisma Client not being generated during dependency installation. A second clean-build issue was caused by database access during Next.js route collection and home-page prerendering. Both are resolved in code.
+
+The current preview is protected by Vercel account SSO, and the Vercel project has not been verified with a reachable hosted PostgreSQL `DATABASE_URL`. Full registration, admin-session, and course-CRUD smoke testing therefore remains blocked. Production has not been promoted.
+
+## Deployment Snapshot
+
+- Provider: Vercel for the Next.js preview.
+- Branch: `codex/deployment-cleanup-2026-06-29`.
+- Verified commit: `d8cb860` (`Decouple Vercel builds from database runtime`).
+- Preview: `https://edu-flow-git-codex-deployment-clean-1e32ee-narutoglens-projects.vercel.app`.
+- Vercel build status: passed on 2026-06-30.
+- Preview access: protected; all anonymous route checks redirect to Vercel SSO.
+- Production: not promoted.
+- Local `.env`: retained as requested; no `.env.example` was created.
+
+## Changes Verified
+
+- Added `postinstall: prisma generate` so Vercel always generates the schema-specific Prisma Client.
+- Added an explicit `CourseRecord[]` return boundary for admin course records.
+- Made Prisma configuration generation-safe when deployment credentials are unavailable during install.
+- Made Prisma Client initialization lazy so Next.js can inspect route modules without opening a database connection.
+- Marked the database-backed home page as dynamic so catalog queries do not run during static prerendering.
+- Excluded generated `.netlify/` output from ESLint.
+- Preserved runtime safety: the first real database operation still throws a clear error when neither `DATABASE_URL` nor `NETLIFY_DB_URL` is configured.
 
 ## Verification
 
-Passed:
+Passed on 2026-06-30:
 
 ```powershell
-$env:NODE_OPTIONS='--use-system-ca'; npx prisma validate
-$env:NODE_OPTIONS='--use-system-ca'; npx prisma generate
-$env:NODE_OPTIONS='--use-system-ca'; npm run lint
-$env:NODE_OPTIONS='--use-system-ca'; npm test
-$env:NODE_OPTIONS='--use-system-ca'; npm run build
+npm run lint
+npm test
+npm run build
 $env:NODE_OPTIONS='--use-system-ca'; npm audit --omit=dev
 ```
 
 Results:
 
-- Prisma schema is valid.
-- Prisma Client generated successfully.
-- ESLint passed.
-- Vitest passed: 2 files, 9 tests.
-- Next production build passed and includes `/api/auth/register`.
-- npm audit reported 0 vulnerabilities.
-- Text scan found no remaining `eduflow.test`, quick-role login, seeded demo login, or prefilled auth email strings in active app, seed, or README surfaces: `README.md`, `prisma/seed.mjs`, and `src`.
+- ESLint: passed.
+- Vitest: 5 files and 31 tests passed.
+- Next.js 16.2.7 production build: passed.
+- Clean Vercel-style install and build with no local `.env`: passed.
+- Production dependency audit: 0 vulnerabilities.
+- Vercel preview build for `d8cb860`: passed.
 
-Blocked:
+Previously verified locally:
 
-```powershell
-docker compose up -d postgres
-$env:NODE_OPTIONS='--use-system-ca'; npx prisma migrate dev
-$env:NODE_OPTIONS='--use-system-ca'; npx prisma migrate status
-$env:NODE_OPTIONS='--use-system-ca'; npm run prisma:seed
-```
+- Prisma migrations and seed against Docker PostgreSQL.
+- First-user Admin bootstrap and later Student registration.
+- Admin session persistence after refresh.
+- Admin does not fall back to Student mode.
+- Admin course create, edit, publish, soft-delete, and restore behavior.
+- Five seeded sourced courses and APA 7 references.
 
-Docker Desktop is not running or not reachable from this shell:
+## P0 Blockers
 
-```text
-failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine
-```
+### P0: Hosted database is not verified
 
-Because of that, the new migration and updated seed have not been applied to the local Docker Postgres database in this pass.
+The real ignored `.env` points to local Docker PostgreSQL at `localhost`, which Vercel cannot reach. Vercel needs a hosted PostgreSQL connection string in `DATABASE_URL`, followed by migration and seed execution against that database.
 
-## P0 Findings
+Impact: registration, login, sessions, catalog queries, admin access, and course CRUD cannot be accepted on the hosted preview until this is complete.
 
-### P0: Demo accounts in active login flow
-- Status: Resolved in code.
-- Fix: Removed quick-role access buttons, removed prefilled login/reset emails, removed seeded demo users/passwords from `prisma/seed.mjs`, and removed old `eduflow.test` fixture emails.
-- Verification: Static scan found no remaining demo-account login strings.
-- Remaining verification: Apply migration and seed once Docker Desktop is running.
+### P0: Preview smoke is blocked by Vercel SSO
 
-### P0: Registration was static/nonfunctional
-- Status: Resolved.
-- Fix: Added `/api/auth/register`, real Prisma user creation, password hashing, session creation, cookie setting, and registration notification.
-- Security choice: Public registration creates only `STUDENT` accounts after bootstrap. The first active registered user becomes Admin only when no Admin exists.
-- Verification: Build and TypeScript passed.
+Anonymous requests to `/`, `/courses`, `/auth/register`, `/auth/login`, and `/api/ai/health` return `302` to Vercel SSO.
 
-### P0: Submission confirmations were non-persistent
-- Status: Resolved for quiz/exam and assignment submissions.
-- Fix: `/api/quizzes/submit` and `/api/assignments/submit` now use Prisma, create records, and send in-app/email confirmations.
-- Verification: Build and TypeScript passed.
+Impact: automated browser smoke cannot reach EduFlow. Preview protection must be disabled temporarily or a Vercel deployment-bypass credential must be provided for testing.
 
-## P1 Findings
+## P1 Risks
 
-### P1: Database migration/seed not applied locally
-- Status: Blocked by Docker Desktop.
-- Impact: The code and migration are present, but local Postgres still needs `migrate dev` and `prisma:seed` after Docker is started.
-- Fix once unblocked:
+### P1: Former local database password exists in Git history
 
-```powershell
-docker compose up -d postgres
-$env:NODE_OPTIONS='--use-system-ca'; npx prisma migrate dev
-$env:NODE_OPTIONS='--use-system-ca'; npm run prisma:seed
-```
+A stale README command contained a literal local PostgreSQL password. It has been removed from the current tree, and the active README now uses Docker Compose plus the ignored `.env`.
 
-### P1: Email delivery is local/webhook-based
-- Status: Implemented as best-effort infrastructure.
-- Details: Without `EMAIL_WEBHOOK_URL`, emails are logged through the console adapter. With `EMAIL_WEBHOOK_URL`, EduFlow posts transactional email payloads to that webhook.
-- Recommended next step: Configure a real email provider or webhook before production.
+Impact: the old value is still recoverable from public Git history. Do not reuse it for any hosted or production service; rotate it locally if it is still active.
 
-### P1: Cookie consent is preference capture, not full compliance suite
-- Status: Implemented for first-visit choice.
-- Details: Users can choose essential-only or accepted cookies. The implementation stores the choice in a first-party cookie and localStorage.
-- Recommended next step: Add a privacy/cookie policy page before production.
+### P1: Production email delivery is not configured
 
-## P2 Findings
+Notifications work in-app and through the local console adapter. Inbox delivery still requires a real `EMAIL_WEBHOOK_URL` and production-safe `EMAIL_FROM` value.
 
-### P2: Theme coverage needs browser smoke when DB is available
-- Status: Code complete, build verified.
-- Details: Dark is the default; light mode toggle is implemented and persisted.
-- Recommended next step: Browser smoke after Docker is running to visually inspect light and dark pages.
+### P1: AI service deployment is separate
 
-### P2: Lecturer/TA/certificate flows still have mock-backed areas
-- Status: Existing follow-up.
-- Details: This pass fixed auth, registration, student notifications, quiz submissions, assignment submissions, and dashboard notification data. Some lecturer, TA, certificate verification, and review paths still depend on legacy mock helpers.
-- Recommended next step: Convert remaining staff/certificate workflows to Prisma.
+Core LMS deployment can proceed without the Python AI service, but AI routes require a reachable service URL and matching token values before those flows can pass smoke testing.
 
-### P2: Assignment due-date reminders are not scheduled yet
-- Status: Partially implemented.
-- Details: EduFlow now creates in-app/email due-date notifications when a student enrolls in a course that has assignments. It does not yet run a background reminder job for reminders such as 24 hours before a due date.
-- Recommended next step: Add a scheduled worker or cron-backed route before production reminder guarantees are promised.
+### P1: Remaining mock-backed workflows
 
-## P3 Findings
+Some lecturer, teaching-assistant, certificate, review, and support paths still use legacy mock or non-persistent helpers. They should not be represented as fully production-backed yet.
 
-### P3: Working tree remains mixed with previous unrelated cleanup
-- Status: Existing condition.
-- Details: The working tree still includes earlier deleted in-repo Obsidian mirror files plus the previous Prisma/auth/admin work.
-- Recommendation: Keep review/staging intentional and do not revert unrelated deletions unless explicitly requested.
+### P1: Due-date reminders are not scheduled
 
-## Next Actions
+Enrollment creates due-date notifications, but recurring reminders such as 24-hour notices still need a scheduled job.
 
-1. Start Docker Desktop.
-2. Run Prisma migrate and seed to apply `emailNotifications` and remove demo accounts from the local database.
-3. Register the first real account through `/auth/register` and confirm it becomes Admin.
-4. Register a second account and confirm it becomes Student.
-5. Enroll the Student in a course and verify assignment due-date notification.
-6. Submit a quiz and assignment and verify dashboard notifications plus console/webhook email output.
-7. Browser-smoke cookie consent and light/dark mode.
+## Security And Access
+
+- Demo login shortcuts and seeded Student/Admin demo accounts are removed.
+- Passwords and session tokens are hashed with Node crypto.
+- Sessions are persisted and delivered through an httpOnly cookie.
+- Public registration cannot choose a privileged role.
+- The first active account becomes Admin only on a database with no existing Admin; later registrations become Student.
+- Admin routes use server-side role guards.
+
+## Required Next Actions
+
+1. Provision or select hosted PostgreSQL for the Vercel preview.
+2. Set Vercel preview variables: `DATABASE_URL`, `ENVIRONMENT`, `EMAIL_FROM`, and optional email/AI values.
+3. Run Prisma migrations and `prisma/seed.mjs` against the hosted preview database.
+4. Allow smoke access by disabling preview SSO temporarily or creating a deployment bypass.
+5. Smoke registration, Admin persistence, role redirects, five seeded courses, references, and course CRUD.
+6. Promote to production only if every preview smoke check passes.

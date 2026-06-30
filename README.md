@@ -26,14 +26,7 @@ courses, and replaceable service integrations.
 EduFlow needs a Postgres database. The quickest path uses Docker:
 
 ```bash
-# 1. Start Postgres (published on localhost:5432)
-docker run -d --name eduflow-db \
-  -e POSTGRES_USER=eduflow \
-  -e POSTGRES_PASSWORD=MpzKHkylmLWFIGqH39GlloUC \
-  -e POSTGRES_DB=eduflow \
-  -p 5432:5432 postgres:16-alpine
-
-# 2. Install deps, create tables, seed demo accounts
+# Install dependencies, start Postgres, migrate, and seed sourced courses
 npm install
 docker compose up -d postgres
 npm run prisma:generate
@@ -43,10 +36,9 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). `.env` already contains a
-working `DATABASE_URL` and `SESSION_SECRET` for local development.
+working local `DATABASE_URL` for development.
 
-If you restart the database container, re-run `npm run prisma:push` and
-`npm run prisma:seed`.
+If you reset the database volume, re-run the migrations and seed command.
 
 ## Useful scripts
 
@@ -97,3 +89,15 @@ $env:NODE_OPTIONS='--use-system-ca'; npm audit --omit=dev
 Browser smoke should confirm admin login persistence, admin route guards,
 course create/edit/delete, seeded course references, and no failed remote video
 asset requests.
+
+## Vercel preview
+
+Vercel installs run `prisma generate` automatically through `postinstall`.
+The build does not require live database access, but the running application
+does. Configure a hosted PostgreSQL `DATABASE_URL` in the Vercel preview
+environment, apply `prisma/migrations`, and run `prisma/seed.mjs` before hosted
+registration, login, catalog, or Admin smoke testing.
+
+Do not use the local `localhost` database URL in Vercel. Keep production
+promotion gated until the protected preview has passed the smoke checks listed
+in `AUDIT_REPORT.md`.
