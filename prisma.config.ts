@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
 
 const envPath = resolve(process.cwd(), ".env");
 if (existsSync(envPath)) {
@@ -19,6 +19,11 @@ export default defineConfig({
     seed: "node prisma/seed.mjs",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // Client generation does not connect to Postgres, so CI can use a placeholder.
+    // Runtime access and migration commands still require a reachable database.
+    url:
+      process.env.DATABASE_URL ??
+      process.env.NETLIFY_DB_URL ??
+      "postgresql://eduflow:eduflow@127.0.0.1:5432/eduflow",
   },
 });
