@@ -1,26 +1,42 @@
+import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-// Prisma 7 uses driver adapters. We connect with the pg adapter using
-// DATABASE_URL (loaded from .env by Next.js / by the seed script).
-const connectionString = process.env.DATABASE_URL;
+// Prisma 7 uses driver adapters. The client is created lazily via a Proxy so that
+// importing this module (which `next build` does for every page/route) never
+// connects to — or even requires — a database. That keeps the build decoupled
+// from the database at build time (Netlify/Vercel/CI), while a real connection is
+// only attempted on the first actual query.
+//
+// When no DATABASE_URL/NETLIFY_DB_URL is configured we fall back to a local
+// placeholder rather than throwing: the query then fails with a connection error
+// that `withDbFallback` (src/lib/db-fallback.ts) catches and serves seeded data,
+// so a preview deploy with no database still renders the demo instead of 500-ing.
+const PLACEHOLDER_DB_URL = "postgresql://eduflow:eduflow@127.0.0.1:5432/eduflow";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-function createClient() {
-  if (!connectionString) {
-    throw new Error(
-      "DATABASE_URL is not set. Copy .env.example to .env and start Postgres (see README).",
-    );
-  }
-  const adapter = new PrismaPg({ connectionString });
-  return new PrismaClient({ adapter });
+function getPrismaClient(): PrismaClient {
+  if (globalForPrisma.prisma) return globalForPrisma.prisma;
+
+  const connectionString =
+    process.env.DATABASE_URL ?? process.env.NETLIFY_DB_URL ?? PLACEHOLDER_DB_URL;
+
+  const client = new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  });
+
+  globalForPrisma.prisma = client;
+  return client;
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, property, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});

@@ -1,0 +1,11 @@
+# Netlify build config. The Next.js runtime is auto-detected; `postinstall`
+# (package.json) runs `prisma generate` so the client exists on a fresh install,
+# and src/lib/prisma.ts is build-safe (lazy client, no DB connection at build).
+[build]
+command = "npm run build"
+publish = ".next"
+
+[database]
+
+[database.migrations]
+path = "prisma/migrations"
