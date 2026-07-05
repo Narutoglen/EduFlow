@@ -2,6 +2,8 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Button, ButtonLink, Panel } from "@/components/ui";
 import { DIFFICULTIES, DIFFICULTY_LABELS } from "@/lib/courses";
+import { withDbFallback } from "@/lib/db-fallback";
+import { categories as seedCategories } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { createCourseAction } from "../../actions";
@@ -10,6 +12,8 @@ const errorMessages: Record<string, string> = {
   invalid:
     "Please give the course a title (3+ chars), a description (20+ chars), a category, a difficulty, and a price of 0 or more.",
   category: "That category no longer exists. Pick another one.",
+  offline:
+    "The database is offline, so the course wasn't saved. Start Postgres to create courses.",
 };
 
 const fieldClass =
@@ -25,10 +29,18 @@ export default async function NewCoursePage({
   const lecturer = await requireRole(["LECTURER"]);
   const params = await searchParams;
   const error = params.error ? errorMessages[params.error] : undefined;
-  const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, name: true },
-  });
+  const categories = await withDbFallback(
+    "new course categories",
+    () =>
+      prisma.category.findMany({
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+    () =>
+      [...seedCategories]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((c) => ({ id: c.id, name: c.name })),
+  );
 
   return (
     <PageShell user={lecturer}>

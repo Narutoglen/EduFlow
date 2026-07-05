@@ -52,10 +52,7 @@ export default async function CourseDetailPage({
   const checkoutComplete = valueOf(query.checkout) === "success";
 
   return (
-<<<<<<< HEAD
     <PageShell user={user} className="space-y-8">
-=======
-    <PageShell user={student} className="space-y-8">
       {checkoutComplete ? (
         <Panel className="border-emerald-200 bg-emerald-50 text-emerald-950">
           <div className="flex items-center gap-2">
@@ -67,7 +64,6 @@ export default async function CourseDetailPage({
         </Panel>
       ) : null}
 
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
       <section className="grid overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="relative min-h-[420px] bg-zinc-950 text-white">
           <Image

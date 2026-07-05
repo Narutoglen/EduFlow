@@ -3,8 +3,39 @@ import { Award, CheckCircle2, Download } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel } from "@/components/ui";
 import { canGradeCourseId } from "@/lib/authz";
+import { withDbFallback } from "@/lib/db-fallback";
+import { getCertificate, getCourseById, getUser } from "@/lib/eduflow";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
+
+type VerifiedCertificate = {
+  verificationId: string;
+  issuedAt: Date;
+  studentId: string;
+  courseId: string;
+  student: { name: string };
+  course: { title: string; lecturer: { name: string } };
+};
+
+/** Look the certificate up in the seeded catalog when Postgres is unavailable. */
+function certificateFromSeed(verificationId: string): VerifiedCertificate | null {
+  const cert = getCertificate(verificationId);
+  if (!cert) return null;
+  const course = getCourseById(cert.courseId);
+  const student = getUser(cert.studentId);
+  const lecturer = course ? getUser(course.lecturerId) : undefined;
+  return {
+    verificationId: cert.verificationId,
+    issuedAt: new Date(cert.issuedAt),
+    studentId: cert.studentId,
+    courseId: cert.courseId,
+    student: { name: student?.name ?? "EduFlow learner" },
+    course: {
+      title: course?.title ?? "EduFlow course",
+      lecturer: { name: lecturer?.name ?? "EduFlow lecturer" },
+    },
+  };
+}
 
 // Public certificate verification. Anyone with the verification id can confirm a
 // certificate is genuine (learner, course, lecturer, date), but the downloadable
@@ -17,17 +48,22 @@ export default async function VerifyCertificatePage({
 }) {
   const { certificateId } = await params;
 
-  const certificate = await prisma.certificate.findUnique({
-    where: { verificationId: certificateId },
-    select: {
-      verificationId: true,
-      issuedAt: true,
-      studentId: true,
-      courseId: true,
-      student: { select: { name: true } },
-      course: { select: { title: true, lecturer: { select: { name: true } } } },
-    },
-  });
+  const certificate = await withDbFallback<VerifiedCertificate | null>(
+    "verify certificate",
+    () =>
+      prisma.certificate.findUnique({
+        where: { verificationId: certificateId },
+        select: {
+          verificationId: true,
+          issuedAt: true,
+          studentId: true,
+          courseId: true,
+          student: { select: { name: true } },
+          course: { select: { title: true, lecturer: { select: { name: true } } } },
+        },
+      }),
+    () => certificateFromSeed(certificateId),
+  );
   if (!certificate) notFound();
 
   const viewer = await getSessionUser();
@@ -91,7 +127,6 @@ export default async function VerifyCertificatePage({
           </div>
           <div className="rounded-lg bg-stone-100 p-5 dark:bg-zinc-950">
             <p className="text-sm text-zinc-600 dark:text-zinc-300">
-<<<<<<< HEAD
               This certificate is verifiable by its unique ID.
               {canDownload
                 ? " Download a PDF copy to share with employers or institutions."
@@ -108,20 +143,6 @@ export default async function VerifyCertificatePage({
                 </ButtonLink>
               </div>
             ) : null}
-=======
-              Download a shareable certificate record for learner portfolios,
-              employer checks, or course completion files.
-            </p>
-            <div className="mt-4">
-              <ButtonLink
-                href={`/api/certificates?studentId=${student.id}&courseId=${course.id}`}
-                variant="secondary"
-              >
-                <Download size={16} />
-                Download record
-              </ButtonLink>
-            </div>
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
           </div>
         </div>
       </Panel>

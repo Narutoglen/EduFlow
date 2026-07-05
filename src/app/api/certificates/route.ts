@@ -1,7 +1,32 @@
 import { NextResponse } from "next/server";
 import { requireApiUser } from "@/lib/api-auth";
 import { canGradeCourseId } from "@/lib/authz";
+import { withDbFallback } from "@/lib/db-fallback";
+import { getCertificate, getCourseById, getUser } from "@/lib/eduflow";
 import { prisma } from "@/lib/prisma";
+
+type CertificateRecord = {
+  issuedAt: Date;
+  studentId: string;
+  courseId: string;
+  student: { name: string };
+  course: { title: string };
+};
+
+/** Look the certificate up in the seeded catalog when Postgres is unavailable. */
+function certificateFromSeed(verificationId: string): CertificateRecord | null {
+  const cert = getCertificate(verificationId);
+  if (!cert) return null;
+  const course = getCourseById(cert.courseId);
+  const student = getUser(cert.studentId);
+  return {
+    issuedAt: new Date(cert.issuedAt),
+    studentId: cert.studentId,
+    courseId: cert.courseId,
+    student: { name: student?.name ?? "EduFlow learner" },
+    course: { title: course?.title ?? "EduFlow course" },
+  };
+}
 
 // Certificate PDF download. Identity comes from the session; the client supplies
 // only a verificationId. A learner may download their own certificate; teaching
@@ -22,16 +47,21 @@ export async function GET(request: Request) {
     );
   }
 
-  const certificate = await prisma.certificate.findUnique({
-    where: { verificationId },
-    select: {
-      issuedAt: true,
-      studentId: true,
-      courseId: true,
-      student: { select: { name: true } },
-      course: { select: { title: true } },
-    },
-  });
+  const certificate = await withDbFallback<CertificateRecord | null>(
+    "certificate download",
+    () =>
+      prisma.certificate.findUnique({
+        where: { verificationId },
+        select: {
+          issuedAt: true,
+          studentId: true,
+          courseId: true,
+          student: { select: { name: true } },
+          course: { select: { title: true } },
+        },
+      }),
+    () => certificateFromSeed(verificationId),
+  );
   if (!certificate) {
     return NextResponse.json(
       { error: { code: "NOT_FOUND", message: "Certificate not found." } },

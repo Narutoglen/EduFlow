@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-import { Award, Bell, BookOpen, Flame, GraduationCap, Megaphone, Trophy } from "lucide-react";
-=======
 import {
   ArrowRight,
   Award,
@@ -8,8 +5,9 @@ import {
   BookOpen,
   Flame,
   GraduationCap,
+  Megaphone,
+  Trophy,
 } from "lucide-react";
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 import { CourseCard } from "@/components/course-card";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel, ProgressBar, StatCard } from "@/components/ui";
@@ -38,10 +36,6 @@ export default async function StudentDashboardPage() {
     }))
     .filter((item) => item.course);
   const notifications = getNotifications(student.id);
-<<<<<<< HEAD
-=======
-  const quizAttempts = getQuizAttempts(student.id);
-  const submissions = getSubmissionsForStudent(student.id);
   const continueEnrollment =
     enrollments.find((enrollment) => enrollment.progressPercent < 100) ??
     enrollments[0];
@@ -52,7 +46,6 @@ export default async function StudentDashboardPage() {
     continueEnrollment && continueCourse
       ? getLesson(continueCourse.id, continueEnrollment.lastAccessedLessonId)
       : undefined;
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
   const averageGrade =
     enrollments.reduce((total, enrollment) => total + enrollment.gradePercent, 0) /
     Math.max(enrollments.length, 1);

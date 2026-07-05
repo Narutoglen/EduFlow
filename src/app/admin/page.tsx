@@ -1,56 +1,68 @@
 import { Check, DollarSign, Settings, ShieldAlert, UserCog, X } from "lucide-react";
-import Image from "next/image";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, EmptyState, Panel, ProgressBar, StatCard } from "@/components/ui";
-import { formatMoney, platformStats, roleLabel } from "@/lib/eduflow";
+import { listUsers } from "@/lib/auth-store";
+import { withDbFallback } from "@/lib/db-fallback";
+import {
+  formatMoney,
+  getCoursesByStatus,
+  getPublishedCourses,
+  platformStats,
+  roleLabel,
+} from "@/lib/eduflow";
 import { categories, courses, enrollments } from "@/lib/mock-data";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { approveCourseAction, rejectCourseAction } from "./actions";
 
-<<<<<<< HEAD
 const reviewMessages: Record<string, { tone: "ok" | "error"; text: string }> = {
   approved: { tone: "ok", text: "Course approved and published." },
   rejected: { tone: "ok", text: "Course rejected and removed from the queue." },
   missing: { tone: "error", text: "That course no longer exists." },
   invalid: { tone: "error", text: "Something went wrong — no course was selected." },
+  offline: {
+    tone: "error",
+    text: "The database is offline, so this change wasn't saved. Start Postgres to persist approvals.",
+  },
 };
-=======
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-function valueOf(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 
 export default async function AdminDashboardPage({
   searchParams,
 }: {
-<<<<<<< HEAD
   searchParams: Promise<{ review?: string }>;
 }) {
   const admin = await requireRole(["ADMIN"]);
   const params = await searchParams;
   const review = params.review ? reviewMessages[params.review] : undefined;
-=======
-  searchParams: SearchParams;
-}) {
-  const params = await searchParams;
-  const notice = valueOf(params.notice);
-  const admin = userForRole("ADMIN");
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
   const stats = platformStats();
 
-  // Course queue + counts come from Postgres so approve/reject take effect live.
-  // Real accounts from the database — seeded + self-registered users.
+  // Course queue + counts come from Postgres so approve/reject take effect live;
+  // they degrade to the seeded catalog when Postgres is unavailable (offline demo).
+  // Real accounts from the auth store — seeded + self-registered users.
   const [dbUsers, pending, publishedCount] = await Promise.all([
-    prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.course.findMany({
-      where: { status: "PENDING_REVIEW" },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, slug: true, title: true, description: true, status: true },
-    }),
-    prisma.course.count({ where: { status: "PUBLISHED" } }),
+    listUsers(),
+    withDbFallback(
+      "admin pending courses",
+      () =>
+        prisma.course.findMany({
+          where: { status: "PENDING_REVIEW" },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, slug: true, title: true, description: true, status: true },
+        }),
+      () =>
+        getCoursesByStatus("PENDING_REVIEW").map((course) => ({
+          id: course.id,
+          slug: course.slug,
+          title: course.title,
+          description: course.description,
+          status: course.status,
+        })),
+    ),
+    withDbFallback(
+      "admin published count",
+      () => prisma.course.count({ where: { status: "PUBLISHED" } }),
+      () => getPublishedCourses().length,
+    ),
   ]);
 
   return (
@@ -61,7 +73,6 @@ export default async function AdminDashboardPage({
         body="Approve courses, manage roles, monitor platform analytics, feature categories, and configure global service settings."
       />
 
-<<<<<<< HEAD
       {review ? (
         <div
           className={
@@ -79,32 +90,6 @@ export default async function AdminDashboardPage({
         <StatCard label="Active courses" value={`${publishedCount}`} detail="Published catalog" />
         <StatCard label="Revenue" value={formatMoney(stats.monthlyRevenue)} detail="Mock monthly Stripe" />
         <StatCard label="Pending" value={`${pending.length}`} detail="Course approvals" />
-=======
-      {notice ? (
-        <Panel
-          className={
-            notice === "revisions-requested"
-              ? "mb-6 border-amber-200 bg-amber-50 text-amber-950"
-              : "mb-6 border-emerald-200 bg-emerald-50 text-emerald-950"
-          }
-        >
-          <div className="flex items-center gap-2">
-            {notice === "revisions-requested" ? <X size={18} /> : <Check size={18} />}
-            <p className="font-semibold">
-              {notice === "revisions-requested"
-                ? "Revision request prepared for the lecturer."
-                : "Course approved for publishing."}
-            </p>
-          </div>
-        </Panel>
-      ) : null}
-
-      <section className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Active users" value={`${users.length}`} detail="Registered accounts" />
-        <StatCard label="Active courses" value={`${stats.publishedCourses}`} detail="Published catalog" />
-        <StatCard label="Revenue" value={formatMoney(stats.monthlyRevenue)} detail="Monthly course sales" />
-        <StatCard label="Pending" value={`${stats.pendingApprovals}`} detail="Course approvals" />
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1fr_380px]">
@@ -158,45 +143,9 @@ export default async function AdminDashboardPage({
                       </form>
                     </div>
                   </div>
-<<<<<<< HEAD
                 ))}
               </div>
             )}
-=======
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <ButtonLink href={`/courses/${course.slug}`} variant="secondary">
-                      Preview
-                    </ButtonLink>
-                    <a
-                      href={`/admin?notice=approved&courseId=${course.id}`}
-                      className="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white"
-                    >
-                      <Check size={16} />
-                      Approve
-                    </a>
-                    <a
-                      href={`/admin?notice=revisions-requested&courseId=${course.id}`}
-                      className="inline-flex min-h-10 items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-900"
-                    >
-                      <X size={16} />
-                      Request revisions
-                    </a>
-                  </div>
-                  <ul className="mt-4 grid gap-2 text-sm text-zinc-600 dark:text-zinc-300 md:grid-cols-3">
-                    <li className="rounded-md bg-stone-50 p-3 dark:bg-zinc-950">
-                      Outcomes reviewed
-                    </li>
-                    <li className="rounded-md bg-stone-50 p-3 dark:bg-zinc-950">
-                      Assessment plan checked
-                    </li>
-                    <li className="rounded-md bg-stone-50 p-3 dark:bg-zinc-950">
-                      Certificate eligibility verified
-                    </li>
-                  </ul>
-                </div>
-              ))}
-            </div>
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
           </Panel>
 
           <Panel>
@@ -218,7 +167,6 @@ export default async function AdminDashboardPage({
                     <tr key={user.id}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-<<<<<<< HEAD
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={
@@ -226,13 +174,6 @@ export default async function AdminDashboardPage({
                               "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=80&q=80"
                             }
                             alt=""
-=======
-                          <Image
-                            src={user.avatarUrl}
-                            alt=""
-                            width={36}
-                            height={36}
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
                             className="h-9 w-9 rounded-full object-cover"
                           />
                           <div>
@@ -297,16 +238,7 @@ export default async function AdminDashboardPage({
               <h2 className="text-xl font-semibold">Global settings</h2>
             </div>
             <div className="mt-4 space-y-3 text-sm">
-<<<<<<< HEAD
               {["Payment gateway: Stripe", "SSO: Google OAuth", "Email: transactional provider", "Default storage: 5 GB / course"].map((item) => (
-=======
-              {[
-                "Payments: secure checkout",
-                "Sign-in: email and Google",
-                "Email: learner notifications",
-                "Storage: course media and submissions",
-              ].map((item) => (
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
                 <div key={item} className="rounded-lg bg-stone-50 p-3 dark:bg-zinc-950">
                   {item}
                 </div>

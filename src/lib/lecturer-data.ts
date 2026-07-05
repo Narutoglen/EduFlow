@@ -1,7 +1,12 @@
+import { withDbFallback } from "./db-fallback";
+import { getCoursesForLecturer } from "./eduflow";
+import { enrollments as seedEnrollments } from "./mock-data";
 import { prisma } from "./prisma";
 
 // Read-side data access for the lecturer workspace. These queries hit Postgres
-// directly (course content now lives in the DB, not the mock store).
+// directly (course content now lives in the DB, not the mock store). When
+// Postgres is unavailable they degrade to the seeded catalog so the workspace
+// still renders for an offline demo.
 
 export type LecturerLesson = {
   id: string;
@@ -39,6 +44,14 @@ export type LecturerStats = {
 
 /** All courses owned by a lecturer, newest first, with module/lesson/enrollment rollups. */
 export async function getLecturerCourses(lecturerId: string): Promise<LecturerCourse[]> {
+  return withDbFallback(
+    "lecturer courses",
+    () => getLecturerCoursesFromDb(lecturerId),
+    () => getLecturerCoursesFromSeed(lecturerId),
+  );
+}
+
+async function getLecturerCoursesFromDb(lecturerId: string): Promise<LecturerCourse[]> {
   const courses = await prisma.course.findMany({
     where: { lecturerId },
     orderBy: [{ createdAt: "desc" }],
@@ -88,6 +101,43 @@ export async function getLecturerCourses(lecturerId: string): Promise<LecturerCo
   });
 }
 
+/** Seeded-catalog variant of {@link getLecturerCourses} for offline demos. */
+function getLecturerCoursesFromSeed(lecturerId: string): LecturerCourse[] {
+  return getCoursesForLecturer(lecturerId).map((course) => {
+    const courseEnrollments = seedEnrollments.filter((e) => e.courseId === course.id);
+    const enrollmentCount = courseEnrollments.length;
+    const averageCompletion = enrollmentCount
+      ? Math.round(
+          courseEnrollments.reduce((total, e) => total + e.progressPercent, 0) /
+            enrollmentCount,
+        )
+      : 0;
+    const lessonCount = course.modules.reduce((total, m) => total + m.lessons.length, 0);
+    return {
+      id: course.id,
+      slug: course.slug,
+      title: course.title,
+      status: course.status,
+      priceCents: course.priceCents,
+      moduleCount: course.modules.length,
+      lessonCount,
+      enrollmentCount,
+      averageCompletion,
+      modules: course.modules.map((m) => ({
+        id: m.id,
+        title: m.title,
+        order: m.order,
+        lessons: m.lessons.map((l) => ({
+          id: l.id,
+          title: l.title,
+          durationMinutes: l.durationMinutes,
+          order: l.order,
+        })),
+      })),
+    };
+  });
+}
+
 /** Headline stats for the lecturer dashboard, derived from their courses + DB. */
 export async function getLecturerStats(
   lecturerId: string,
@@ -98,9 +148,14 @@ export async function getLecturerStats(
     (total, c) => total + c.enrollmentCount * c.priceCents,
     0,
   );
-  const toGrade = await prisma.assignmentSubmission.count({
-    where: { status: "SUBMITTED", assignment: { course: { lecturerId } } },
-  });
+  const toGrade = await withDbFallback(
+    "lecturer submissions to grade",
+    () =>
+      prisma.assignmentSubmission.count({
+        where: { status: "SUBMITTED", assignment: { course: { lecturerId } } },
+      }),
+    () => 0,
+  );
 
   return {
     courseCount: courses.length,

@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { prisma } from "./prisma";
+import { getUserById } from "./auth-store";
 import type { Role, User } from "./types";
 
 export const SESSION_COOKIE = "eduflow_session";
@@ -116,9 +116,9 @@ export async function getSessionUser(): Promise<User | null> {
   const userId = verifyToken(store.get(SESSION_COOKIE)?.value);
   if (!userId) return null;
   try {
-    const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+    const dbUser = await getUserById(userId);
     if (!dbUser || !dbUser.isActive) return null;
-    return toUser(dbUser as DbUser);
+    return toUser(dbUser);
   } catch (error) {
     // A transient DB outage or a stale session token shouldn't crash every
     // page render. Treat it as "not signed in" and let the route render its

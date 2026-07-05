@@ -1,3 +1,11 @@
+import { withDbFallback } from "./db-fallback";
+import {
+  assignmentSubmissions as seedSubmissions,
+  certificates as seedCertificates,
+  courses as seedCourses,
+  enrollments as seedEnrollments,
+  quizAttempts as seedQuizAttempts,
+} from "./mock-data";
 import { prisma } from "./prisma";
 
 // A unified "scored item" — a graded quiz attempt or a graded assignment — so
@@ -98,6 +106,16 @@ function computeAchievements(
 
 /** Everything a student needs for the achievements portal: scores, summary, certs. */
 export async function getStudentAchievements(
+  studentId: string,
+): Promise<StudentAchievements> {
+  return withDbFallback(
+    "student achievements",
+    () => getStudentAchievementsFromDb(studentId),
+    () => getStudentAchievementsFromSeed(studentId),
+  );
+}
+
+async function getStudentAchievementsFromDb(
   studentId: string,
 ): Promise<StudentAchievements> {
   const [enrollments, attempts, submissions, certs] = await Promise.all([
@@ -206,6 +224,110 @@ export async function getStudentAchievements(
       verificationId: c.verificationId,
       courseTitle: c.course.title,
       issuedAt: c.issuedAt,
+    })),
+    achievements: computeAchievements(summary, scores),
+  };
+}
+
+/**
+ * Seeded-catalog variant of {@link getStudentAchievements} for offline demos.
+ * Derives the same scores/summary/certificates from the in-memory mock store so
+ * the student portal stays populated when Postgres is unavailable.
+ */
+function getStudentAchievementsFromSeed(studentId: string): StudentAchievements {
+  // Index quiz/assignment metadata by id from the seeded catalog.
+  const quizMeta = new Map<string, { title: string; courseTitle: string }>();
+  const assignmentMeta = new Map<
+    string,
+    { title: string; maxScore: number; courseTitle: string }
+  >();
+  for (const course of seedCourses) {
+    for (const quiz of course.quizzes) {
+      quizMeta.set(quiz.id, { title: quiz.title, courseTitle: course.title });
+    }
+    for (const assignment of course.assignments) {
+      assignmentMeta.set(assignment.id, {
+        title: assignment.title,
+        maxScore: assignment.maxScore,
+        courseTitle: course.title,
+      });
+    }
+  }
+  const courseTitleById = new Map(seedCourses.map((c) => [c.id, c.title]));
+
+  const enrollments = seedEnrollments.filter((e) => e.studentId === studentId);
+  const attempts = seedQuizAttempts.filter((a) => a.studentId === studentId);
+  const submissions = seedSubmissions.filter((s) => s.studentId === studentId);
+  const certs = seedCertificates.filter((c) => c.studentId === studentId);
+
+  const quizScores: TestScore[] = attempts.map((attempt) => {
+    const meta = quizMeta.get(attempt.quizId);
+    return {
+      id: attempt.id,
+      kind: "quiz",
+      title: meta?.title ?? "Quiz",
+      courseTitle: meta?.courseTitle ?? "Course",
+      scorePercent: attempt.scorePercent,
+      rawScore: attempt.scorePercent,
+      maxScore: 100,
+      passed: attempt.passed,
+      status: attempt.passed ? "Passed" : "Needs review",
+      feedback: null,
+      date: new Date(attempt.submittedAt),
+    };
+  });
+
+  const assignmentScores: TestScore[] = submissions.map((submission) => {
+    const meta = assignmentMeta.get(submission.assignmentId);
+    const max = meta?.maxScore ?? 0;
+    const percent =
+      submission.score != null && max > 0
+        ? Math.round((submission.score / max) * 100)
+        : null;
+    return {
+      id: submission.id,
+      kind: "assignment",
+      title: meta?.title ?? "Assignment",
+      courseTitle: meta?.courseTitle ?? "Course",
+      scorePercent: percent,
+      rawScore: submission.score ?? null,
+      maxScore: max,
+      passed: percent == null ? null : percent >= 50,
+      status: submission.status === "GRADED" ? "Graded" : "Submitted",
+      feedback: submission.feedback ?? null,
+      date: new Date(submission.submittedAt),
+    };
+  });
+
+  const scores = [...quizScores, ...assignmentScores].sort(
+    (a, b) => b.date.getTime() - a.date.getTime(),
+  );
+
+  const coursesEnrolled = enrollments.length;
+  const coursesCompleted = enrollments.filter((e) => e.progressPercent === 100).length;
+  const averageGrade = coursesEnrolled
+    ? Math.round(
+        enrollments.reduce((total, e) => total + e.gradePercent, 0) / coursesEnrolled,
+      )
+    : 0;
+
+  const summary: AchievementSummary = {
+    coursesEnrolled,
+    coursesCompleted,
+    averageGrade,
+    certificates: certs.length,
+    testsTaken: attempts.length,
+    testsPassed: attempts.filter((a) => a.passed).length,
+  };
+
+  return {
+    summary,
+    scores,
+    certificates: certs.map((c) => ({
+      id: c.id,
+      verificationId: c.verificationId,
+      courseTitle: courseTitleById.get(c.courseId) ?? "Course",
+      issuedAt: new Date(c.issuedAt),
     })),
     achievements: computeAchievements(summary, scores),
   };

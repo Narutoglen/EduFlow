@@ -2,6 +2,7 @@ import { ClipboardCheck } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, Button, ButtonLink, EmptyState, Panel } from "@/components/ui";
 import { gradableCourseIds } from "@/lib/authz";
+import { withDbFallback } from "@/lib/db-fallback";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 import { gradeSubmissionAction } from "../actions";
@@ -12,6 +13,10 @@ const FLASH: Record<string, { tone: "green" | "red"; message: string }> = {
   missing: { tone: "red", message: "That submission no longer exists." },
   forbidden: { tone: "red", message: "You can only grade work in your own courses." },
   range: { tone: "red", message: "Score must be within the assignment's maximum." },
+  offline: {
+    tone: "red",
+    message: "The database is offline, so the grade wasn't saved. Start Postgres to grade submissions.",
+  },
 };
 
 export default async function GradingPage({
@@ -27,19 +32,24 @@ export default async function GradingPage({
   // Only submissions for courses this grader owns/assists — scoped at the query
   // level so no other course's work is ever loaded.
   const courseIds = await gradableCourseIds(grader);
-  const submissions = await prisma.assignmentSubmission.findMany({
-    where: { status: "SUBMITTED", assignment: { courseId: { in: courseIds } } },
-    orderBy: { submittedAt: "asc" },
-    select: {
-      id: true,
-      body: true,
-      submittedAt: true,
-      student: { select: { name: true, email: true } },
-      assignment: {
-        select: { title: true, maxScore: true, course: { select: { title: true } } },
-      },
-    },
-  });
+  const submissions = await withDbFallback(
+    "grading queue",
+    () =>
+      prisma.assignmentSubmission.findMany({
+        where: { status: "SUBMITTED", assignment: { courseId: { in: courseIds } } },
+        orderBy: { submittedAt: "asc" },
+        select: {
+          id: true,
+          body: true,
+          submittedAt: true,
+          student: { select: { name: true, email: true } },
+          assignment: {
+            select: { title: true, maxScore: true, course: { select: { title: true } } },
+          },
+        },
+      }),
+    () => [],
+  );
 
   return (
     <PageShell user={grader}>

@@ -1,8 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import {
+  createUser,
+  DuplicateEmailError,
+  getUserByEmail,
+  type AuthUser,
+} from "@/lib/auth-store";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { prisma } from "@/lib/prisma";
 import {
   clearSessionCookie,
   homeForRole,
@@ -26,13 +31,13 @@ export async function loginAction(formData: FormData) {
     redirect(`/auth/login?error=missing${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   }
 
-  let user: Awaited<ReturnType<typeof prisma.user.findUnique>>;
+  let user: AuthUser | null;
   try {
-    user = await prisma.user.findUnique({ where: { email } });
+    user = await getUserByEmail(email);
   } catch (error) {
     // Fail closed on a DB outage: show a generic "unavailable" message instead
-    // of letting the raw Prisma error reach the user (OWASP A10).
-    console.error("loginAction: database unavailable", error);
+    // of letting the raw driver error reach the user (OWASP A10).
+    console.error("loginAction: auth database unavailable", error);
     redirect(`/auth/login?error=unavailable${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   }
   if (!user || !user.isActive || !verifyPassword(password, user.passwordHash)) {
@@ -55,30 +60,32 @@ export async function registerAction(formData: FormData) {
   // Keep redirect() out of the try blocks so its NEXT_REDIRECT control-flow
   // signal is never swallowed; only genuine failures (e.g. a DB outage) land in
   // the catch and surface a generic "unavailable" message (OWASP A10).
-  let existing: Awaited<ReturnType<typeof prisma.user.findUnique>>;
+  let existing: AuthUser | null;
   try {
-    existing = await prisma.user.findUnique({ where: { email } });
+    existing = await getUserByEmail(email);
   } catch (error) {
-    console.error("registerAction: database unavailable", error);
+    console.error("registerAction: auth database unavailable", error);
     redirect("/auth/register?error=unavailable");
   }
   if (existing) {
     redirect("/auth/register?error=exists");
   }
 
-  let user: Awaited<ReturnType<typeof prisma.user.create>>;
+  let user: AuthUser;
   try {
-    user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        role: "STUDENT",
-        passwordHash: hashPassword(password),
-        emailVerifiedAt: new Date(),
-      },
+    user = await createUser({
+      name,
+      email,
+      role: "STUDENT",
+      passwordHash: hashPassword(password),
     });
   } catch (error) {
-    console.error("registerAction: database unavailable", error);
+    // A unique-constraint race (two signups at once) surfaces as a duplicate;
+    // anything else is treated as a generic outage (OWASP A10).
+    if (error instanceof DuplicateEmailError) {
+      redirect("/auth/register?error=exists");
+    }
+    console.error("registerAction: registration failed", error);
     redirect("/auth/register?error=unavailable");
   }
 

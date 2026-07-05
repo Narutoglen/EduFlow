@@ -1,8 +1,8 @@
 import { Building2, CalendarDays, CheckCircle2, Link2, Mail, ShieldCheck } from "lucide-react";
 import { PageShell, PageTitle } from "@/components/site-shell";
 import { Badge, ButtonLink, Panel } from "@/components/ui";
+import { getUserById } from "@/lib/auth-store";
 import { roleLabel } from "@/lib/eduflow";
-import { prisma } from "@/lib/prisma";
 import { homeForRole, requireUser } from "@/lib/session";
 
 export default async function ProfilePage() {
@@ -10,10 +10,7 @@ export default async function ProfilePage() {
   const user = await requireUser("/profile");
 
   // The session user covers most fields; fetch createdAt for "member since".
-  const account = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { createdAt: true },
-  });
+  const account = await getUserById(user.id).catch(() => null);
 
   return (
     <PageShell user={user}>

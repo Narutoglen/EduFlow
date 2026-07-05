@@ -1,15 +1,26 @@
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/api-auth";
+import { withDbFallback } from "@/lib/db-fallback";
+import { getCourseById } from "@/lib/eduflow";
 import { prisma } from "@/lib/prisma";
 
 // Create a (mock) checkout session for the SIGNED-IN student. The studentId is
 // taken from the session — never from the query string or body — so a caller
 // cannot start a checkout on someone else's behalf. The course must exist.
+// Degrades to the seeded catalog when Postgres is offline (zero-setup demo).
 async function checkoutForCourse(courseId: string, studentEmail: string) {
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    select: { slug: true, priceCents: true },
-  });
+  const course = await withDbFallback(
+    "checkout course",
+    () =>
+      prisma.course.findUnique({
+        where: { id: courseId },
+        select: { slug: true, priceCents: true },
+      }),
+    () => {
+      const seed = getCourseById(courseId);
+      return seed ? { slug: seed.slug, priceCents: seed.priceCents } : null;
+    },
+  );
   if (!course) return null;
   return {
     provider: "mock-stripe",
@@ -24,7 +35,6 @@ export async function GET(request: Request) {
   const auth = await requireApiRole(["STUDENT"]);
   if (auth instanceof NextResponse) return auth;
 
-<<<<<<< HEAD
   const courseId = new URL(request.url).searchParams.get("courseId") ?? "";
   const checkout = await checkoutForCourse(courseId, auth.email);
   if (!checkout) {
@@ -34,9 +44,6 @@ export async function GET(request: Request) {
     );
   }
   return NextResponse.json(checkout);
-=======
-  return NextResponse.redirect(new URL(checkout.checkoutUrl, request.url));
->>>>>>> 1c01f0308f5fafe3f3ca847d57554f19db9da16a
 }
 
 export async function POST(request: Request) {
