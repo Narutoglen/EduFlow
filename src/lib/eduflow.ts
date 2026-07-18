@@ -26,6 +26,11 @@ export type CatalogFilters = {
   difficulty?: string;
   price?: "free" | "paid";
   sort?: "rating" | "duration" | "price";
+  // Optional pagination. When omitted, callers receive the full result set
+  // (preserves existing behaviour); when set, the DB-backed catalog trims the
+  // returned page so list endpoints stay bounded.
+  page?: number;
+  pageSize?: number;
 };
 
 export function formatMoney(cents: number) {

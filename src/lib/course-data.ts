@@ -214,14 +214,57 @@ export async function getEnrollmentFromDb(studentId: string, courseId: string): 
 }
 
 export async function getEnrollmentsForStudentFromDb(studentId: string): Promise<Enrollment[]> {
+  // Batched to avoid the previous N+1 (one deep findUnique + one progress query
+  // per enrollment). We now issue exactly two queries regardless of how many
+  // courses the student is enrolled in: one for enrollments + their course
+  // lessons, one for all completed lesson progress across those courses.
   const records = await prisma.enrollment.findMany({
     where: { studentId },
     orderBy: { startedAt: "desc" },
+    include: {
+      course: { include: { modules: { include: { lessons: true } } } },
+    },
   });
-  const enrollments = await Promise.all(
-    records.map((record) => getEnrollmentFromDb(studentId, record.courseId)),
-  );
-  return enrollments.filter((enrollment): enrollment is Enrollment => Boolean(enrollment));
+  if (records.length === 0) return [];
+
+  const courseIds = records.map((record) => record.courseId);
+  const completed = await prisma.lessonProgress.findMany({
+    where: {
+      studentId,
+      completed: true,
+      lesson: { module: { courseId: { in: courseIds } } },
+    },
+    orderBy: { updatedAt: "desc" },
+    include: { lesson: { select: { id: true, module: { select: { courseId: true } } } } },
+  });
+
+  // Group completed lesson ids by course, preserving recency order.
+  const completedByCourse = new Map<string, string[]>();
+  for (const progress of completed) {
+    const courseId = progress.lesson.module.courseId;
+    const list = completedByCourse.get(courseId) ?? [];
+    list.push(progress.lessonId);
+    completedByCourse.set(courseId, list);
+  }
+
+  return records.map((record) => {
+    const completedLessonIds = completedByCourse.get(record.courseId) ?? [];
+    const lessons = record.course.modules
+      .flatMap((module) => module.lessons)
+      .sort((a, b) => a.order - b.order);
+    return {
+      id: record.id,
+      studentId,
+      courseId: record.courseId,
+      paid: record.paid,
+      progressPercent: record.progressPercent,
+      streakDays: record.streakDays,
+      completedLessonIds,
+      gradePercent: record.gradePercent,
+      lastAccessedLessonId: completedLessonIds[0] ?? lessons[0]?.id ?? "",
+      startedAt: record.startedAt.toISOString().slice(0, 10),
+    };
+  });
 }
 
 export async function getNotificationsForUserFromDb(userId: string): Promise<Notification[]> {
@@ -332,11 +375,21 @@ export async function filterCoursesFromDb(filters: CatalogFilters) {
     return matchesQuery && matchesCategory && matchesDifficulty && matchesPrice;
   });
 
-  return result.sort((a, b) => {
+  const sorted = result.sort((a, b) => {
     if (filters.sort === "duration") return a.durationHours - b.durationHours;
     if (filters.sort === "price") return a.priceCents - b.priceCents;
     return b.rating - a.rating;
   });
+
+  // Bound the returned page when pagination is requested. Callers that omit
+  // page/pageSize still get the full sorted list.
+  if (filters.page != null || filters.pageSize != null) {
+    const pageSize = Math.min(Math.max(filters.pageSize ?? 12, 1), 100);
+    const page = Math.max(filters.page ?? 1, 1);
+    const start = (page - 1) * pageSize;
+    return sorted.slice(start, start + pageSize);
+  }
+  return sorted;
 }
 
 export async function getResourceFromDb(resourceId: string) {
