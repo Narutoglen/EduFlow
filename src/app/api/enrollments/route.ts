@@ -32,7 +32,14 @@ export async function POST(request: Request) {
     },
   });
   if (!existing) {
-    await notifyAssignmentDeadlines(auth.id, courseId);
+    // Deadline notifications are a best-effort side effect. A failure here
+    // (e.g. email webhook down) must not fail an otherwise-successful
+    // enrollment, so we swallow and log rather than 500 the request.
+    try {
+      await notifyAssignmentDeadlines(auth.id, courseId);
+    } catch (error) {
+      console.error("enrollments: deadline notification failed", error);
+    }
   }
 
   return NextResponse.json(
