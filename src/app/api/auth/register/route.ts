@@ -9,6 +9,11 @@ import {
   toAppUser,
 } from "@/lib/session";
 import { createUserNotification } from "@/lib/notifications";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
+
+// Registration abuse guard: 5 new accounts per IP per 10 minutes.
+const REGISTER_LIMIT = 5;
+const REGISTER_WINDOW_SECONDS = 600;
 
 function value(payload: Record<string, FormDataEntryValue>, key: string) {
   return String(payload[key] ?? "").trim();
@@ -25,8 +30,20 @@ function redirectNotice(request: Request, notice: string) {
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
-    ? await request.json()
+    ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
+
+  const limit = rateLimit(clientKey(request, "register"), REGISTER_LIMIT, REGISTER_WINDOW_SECONDS);
+  if (!limit.ok) {
+    if (contentType.includes("application/json")) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later." },
+        { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
+      );
+    }
+    return redirectNotice(request, "rate-limited");
+  }
+
   const intent = value(payload, "intent") || "student";
 
   if (intent === "lecturer-application") {

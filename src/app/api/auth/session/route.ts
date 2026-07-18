@@ -11,6 +11,12 @@ import {
   toAppUser,
 } from "@/lib/session";
 import { verifyPassword } from "@/lib/security";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
+
+// Brute-force / credential-stuffing guard on login + reset. Best-effort and
+// per-instance (see rate-limit.ts). 10 attempts per IP per 5 minutes.
+const AUTH_LIMIT = 10;
+const AUTH_WINDOW_SECONDS = 300;
 
 const roleLabels = {
   STUDENT: "Student",
@@ -47,7 +53,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
-    ? await request.json()
+    ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
   const email = String(payload.email ?? "");
   const password = String(payload.password ?? "");
@@ -62,6 +68,21 @@ export async function POST(request: Request) {
     const response = NextResponse.json({ signedOut: true });
     response.cookies.delete(SESSION_COOKIE);
     return response;
+  }
+
+  // Rate-limit credential-checking intents (login + reset) per client IP.
+  const limit = rateLimit(clientKey(request, "auth"), AUTH_LIMIT, AUTH_WINDOW_SECONDS);
+  if (!limit.ok) {
+    if (!contentType.includes("application/json")) {
+      return NextResponse.redirect(
+        new URL("/auth/login?notice=rate-limited", request.url),
+        303,
+      );
+    }
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
+    );
   }
 
   const user = await prisma.user.findUnique({ where: { email } });

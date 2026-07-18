@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isEnrolled } from "@/lib/authz";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
@@ -6,7 +7,7 @@ import { requireRole } from "@/lib/session";
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
-    ? await request.json()
+    ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
   const quizId = String(payload.quizId ?? "");
   const courseId = String(payload.courseId ?? "");
@@ -25,6 +26,16 @@ export async function POST(request: Request) {
 
   if (!quiz) {
     return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+  }
+
+  // Object-level authz: only a student enrolled in the quiz's course may submit
+  // an attempt. The quiz's real courseId (not the client-supplied one) is used,
+  // so a tampered quizId cannot reach a course the caller is not part of.
+  if (!(await isEnrolled(student.id, quiz.courseId))) {
+    return NextResponse.json(
+      { error: "You are not enrolled in this course." },
+      { status: 403 },
+    );
   }
 
   const answers = Object.fromEntries(
