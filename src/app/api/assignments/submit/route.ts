@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { storageAdapter } from "@/lib/adapters";
+import { isEnrolled } from "@/lib/authz";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
@@ -7,7 +8,7 @@ import { requireRole } from "@/lib/session";
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
-    ? await request.json()
+    ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
   const assignmentId = String(payload.assignmentId ?? "");
   const courseId = String(payload.courseId ?? "");
@@ -20,6 +21,16 @@ export async function POST(request: Request) {
 
   if (!assignment) {
     return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
+  }
+
+  // Object-level authz: only a student enrolled in the assignment's course may
+  // submit. Uses the assignment's real courseId, so a tampered assignmentId
+  // cannot inject a submission into a course the caller is not part of.
+  if (!(await isEnrolled(student.id, assignment.courseId))) {
+    return NextResponse.json(
+      { error: "You are not enrolled in this course." },
+      { status: 403 },
+    );
   }
 
   const upload = await storageAdapter.createUploadUrl(`${assignmentId}.txt`);

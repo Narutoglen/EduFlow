@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isEnrolled } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
   const payload = contentType.includes("application/json")
-    ? await request.json()
+    ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
   const courseId = String(payload.courseId ?? "");
   const lessonId = String(payload.lessonId ?? "");
@@ -34,6 +35,18 @@ export async function POST(request: Request) {
   if (!lesson || lesson.module.courseId !== courseId || lesson.module.course.deletedAt) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
   }
+
+  // Authz + payment-bypass guard: only an enrolled student may record progress.
+  // Previously the enrollment was UPSERTed here, which let any signed-in student
+  // self-enroll in any course (including paid ones) just by POSTing progress.
+  // We now require a pre-existing enrollment and never create one from this path.
+  if (!(await isEnrolled(student.id, courseId))) {
+    return NextResponse.json(
+      { error: "You are not enrolled in this course." },
+      { status: 403 },
+    );
+  }
+
   await prisma.lessonProgress.upsert({
     where: { studentId_lessonId: { studentId: student.id, lessonId } },
     update: { completed: true, watchedSeconds: 0, lastPlaybackSecond: 0 },
@@ -47,14 +60,9 @@ export async function POST(request: Request) {
       lessonId: { in: lessons.map((item) => item.id) },
     },
   });
-  await prisma.enrollment.upsert({
+  await prisma.enrollment.update({
     where: { studentId_courseId: { studentId: student.id, courseId } },
-    update: {
-      progressPercent: lessons.length ? Math.round((completed / lessons.length) * 100) : 0,
-    },
-    create: {
-      studentId: student.id,
-      courseId,
+    data: {
       progressPercent: lessons.length ? Math.round((completed / lessons.length) * 100) : 0,
     },
   });
