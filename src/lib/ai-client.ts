@@ -10,6 +10,9 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL ?? "http://ai-service:8000";
 const SECRET = process.env.AI_SERVICE_TOKEN_SECRET ?? "";
 const AUDIENCE = process.env.AI_SERVICE_TOKEN_AUD ?? "ai-service";
 const TOKEN_TTL_SECONDS = 300; // short-lived (secure-design review §A)
+// Cap how long we wait on ai-service so a hung upstream cannot pin a Next.js
+// worker indefinitely. Overridable for slow environments.
+const AI_TIMEOUT_MS = Number(process.env.AI_SERVICE_TIMEOUT_MS ?? 15000);
 
 export type Principal = {
   userId: string;
@@ -67,6 +70,7 @@ export async function callAiService<T>({
     headers: finalHeaders,
     body: body !== undefined ? JSON.stringify(body) : undefined,
     cache: "no-store",
+    signal: AbortSignal.timeout(AI_TIMEOUT_MS),
   });
   const data = (await resp.json().catch(() => null)) as T;
   return { status: resp.status, data };
@@ -83,6 +87,7 @@ export async function forwardMultipart<T>(
     headers: { authorization: `Bearer ${mintServiceToken(principal)}` },
     body: form,
     cache: "no-store",
+    signal: AbortSignal.timeout(AI_TIMEOUT_MS),
   });
   const data = (await resp.json().catch(() => null)) as T;
   return { status: resp.status, data };
