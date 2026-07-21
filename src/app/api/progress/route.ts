@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { recordLessonProgress } from "@/lib/assessments";
 import { isDbUnavailable } from "@/lib/db-fallback";
+import { recordAnalyticsEvent } from "@/lib/analytics";
 
 // Shared 503 body for when a write can't reach Postgres (offline demo).
 const DB_OFFLINE = {
@@ -46,8 +47,10 @@ export async function POST(request: Request) {
   }
 
   let result: Awaited<ReturnType<typeof recordLessonProgress>>;
+  let progressPercent = 0;
   try {
     result = await recordLessonProgress({ studentId: auth.id, lessonId });
+    progressPercent = result.ok ? result.data.progressPercent : 0;
   } catch (error) {
     if (!isDbUnavailable(error)) throw error;
     if (isForm) {
@@ -65,12 +68,21 @@ export async function POST(request: Request) {
     });
   }
 
+  await recordAnalyticsEvent({
+    eventType: "lesson.completed",
+    lessonId,
+    courseId: courseId || undefined,
+    studentId: auth.id,
+    metadata: { progressPercent },
+  });
+
   if (isForm) {
     const back = courseId
       ? new URL(`/learn/${courseId}/${lessonId}`, request.url)
       : new URL("/dashboard", request.url);
+    back.searchParams.set("notice", "progress-saved");
     return NextResponse.redirect(back, 303);
   }
 
-  return NextResponse.json({ lessonId, progressPercent: result.data.progressPercent });
+  return NextResponse.json({ lessonId, progressPercent });
 }

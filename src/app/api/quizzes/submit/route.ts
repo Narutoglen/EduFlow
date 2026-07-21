@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/api-auth";
 import { scoreAndRecordQuizAttempt } from "@/lib/assessments";
 import { isDbUnavailable } from "@/lib/db-fallback";
+import { recordAnalyticsEvent } from "@/lib/analytics";
 
 const DB_OFFLINE = {
   error: { code: "SERVICE_UNAVAILABLE", message: "The database is offline. Try again once it is running." },
 } as const;
 
-// Submit a quiz attempt. The student is taken from the session; the quiz is
-// scored server-side from the database (the client cannot submit its own score),
-// and the attempt is persisted only if the student is enrolled in the course.
+// Submit a quiz attempt.
 export async function POST(request: Request) {
   const auth = await requireApiRole(["STUDENT"]);
   if (auth instanceof NextResponse) return auth;
@@ -28,8 +27,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // answers: questionId -> choiceId. Accept an explicit `answers` object (JSON
-  // clients) or top-level question fields (the lesson form's radio inputs).
   const rawAnswers =
     payload.answers && typeof payload.answers === "object"
       ? (payload.answers as Record<string, unknown>)
@@ -40,8 +37,12 @@ export async function POST(request: Request) {
   }
 
   let result: Awaited<ReturnType<typeof scoreAndRecordQuizAttempt>>;
+  let courseId: string | undefined;
   try {
     result = await scoreAndRecordQuizAttempt({ studentId: auth.id, quizId, answers });
+    courseId = result.ok
+      ? await requireQuizCourseId(quizId)
+      : undefined;
   } catch (error) {
     if (!isDbUnavailable(error)) throw error;
     if (isForm) {
@@ -59,8 +60,20 @@ export async function POST(request: Request) {
     });
   }
 
+  await recordAnalyticsEvent({
+    eventType: "quiz.submitted",
+    quizId,
+    courseId,
+    studentId: auth.id,
+    metadata: {
+      scorePercent: result.data.scorePercent,
+      passed: result.data.passed,
+      earnedPoints: result.data.earnedPoints,
+      totalPoints: result.data.totalPoints,
+    },
+  });
+
   if (isForm) {
-    // Return the learner to their results portal so the new score is visible.
     const to = new URL("/achievements", request.url);
     to.searchParams.set("flash", result.data.passed ? "quiz-passed" : "quiz-scored");
     to.searchParams.set("score", String(result.data.scorePercent));
@@ -74,4 +87,13 @@ export async function POST(request: Request) {
     earnedPoints: result.data.earnedPoints,
     totalPoints: result.data.totalPoints,
   });
+}
+
+async function requireQuizCourseId(quizId: string): Promise<string | undefined> {
+  const { prisma } = await import("@/lib/prisma");
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    select: { courseId: true },
+  });
+  return quiz?.courseId;
 }

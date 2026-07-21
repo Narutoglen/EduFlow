@@ -22,7 +22,13 @@ class Settings(BaseSettings):
     llm_model: str = Field(default="llama3.1:8b", alias="LLM_MODEL")
     embed_model: str = Field(default="nomic-embed-text", alias="EMBED_MODEL")
     whisper_model: str = Field(default="small", alias="WHISPER_MODEL")
-    ai_provider: str = Field(default="ollama", alias="AI_PROVIDER")  # ollama | openai
+    ai_provider: str = Field(default="ollama", alias="AI_PROVIDER")  # ollama | stub | nim | openai
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    openai_base_url: str = Field(default="", alias="OPENAI_BASE_URL")
+
+    @property
+    def openai_enabled(self) -> bool:
+        return bool(self.openai_api_key and self.openai_base_url)
 
     # Service token (BFF -> ai-service). Symmetric HS256, short TTL, rotated.
     service_token_secret: str = Field(default="dev-only-change-me", alias="AI_SERVICE_TOKEN_SECRET")

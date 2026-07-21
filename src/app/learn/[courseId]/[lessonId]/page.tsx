@@ -27,6 +27,7 @@ import {
   getQuizForLesson,
 } from "@/lib/eduflow";
 import { requireUser } from "@/lib/session";
+import { recordAnalyticsEvent } from "@/lib/analytics";
 import { videoAdapter } from "@/lib/adapters";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -63,6 +64,16 @@ export default async function LearnPage({
   const lesson = getLessons(course).find((item) => item.id === lessonId);
   if (!lesson) notFound();
 
+  if (!enrollment) {
+    await recordAnalyticsEvent({
+      eventType: "lesson.viewed",
+      lessonId: lesson.id,
+      courseId: course.id,
+      studentId: student.id,
+      metadata: { enrolled: false },
+    });
+  }
+
   const canAccess = canAccessLesson(course, lesson, enrollment);
   const playback = videoAdapter.playbackUrl(lesson.videoUrl);
   const quiz = getQuizForLesson(course, lesson.id);
@@ -71,6 +82,13 @@ export default async function LearnPage({
   const previous = getPreviousLesson(course, lesson.id);
   const next = getNextLesson(course, lesson.id);
   const progress = completionForCourse(course, enrollment);
+
+  await recordAnalyticsEvent({
+    eventType: "lesson.started",
+    lessonId: lesson.id,
+    courseId: course.id,
+    studentId: student.id,
+  });
 
   return (
     <PageShell user={student} className="space-y-6">
@@ -183,28 +201,13 @@ export default async function LearnPage({
                     allowFullScreen
                   />
                 </div>
-                <div className="flex flex-wrap items-center gap-3 p-4 text-sm">
-                  <Badge tone="blue">{playback.provider}</Badge>
-                  <label>
-                    Speed{" "}
-                    <select className="ml-2 rounded-md border border-zinc-200 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
-                      {playback.speeds.map((speed) => (
-                        <option key={speed}>{speed}x</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Quality{" "}
-                    <select className="ml-2 rounded-md border border-zinc-200 bg-white px-2 py-1 dark:border-zinc-700 dark:bg-zinc-950">
-                      {playback.qualities.map((quality) => (
-                        <option key={quality}>{quality}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" defaultChecked />
-                    Subtitles
-                  </label>
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-zinc-700 dark:text-zinc-300">{lesson.durationMinutes} min</span>
+                    {lesson.estimatedMinutes ? (
+                      <Badge tone="amber">Estimated {lesson.estimatedMinutes} min</Badge>
+                    ) : null}
+                  </div>
                   <form action="/api/progress" method="post">
                     <input type="hidden" name="courseId" value={course.id} />
                     <input type="hidden" name="lessonId" value={lesson.id} />
@@ -218,6 +221,18 @@ export default async function LearnPage({
                     </button>
                   </form>
                 </div>
+                {lesson.checkForUnderstanding ? (
+                  <div className="border-t border-zinc-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-zinc-800 dark:bg-amber-950 dark:text-amber-50">
+                    <p className="font-semibold">Check for understanding</p>
+                    <p className="mt-1">{lesson.checkForUnderstanding}</p>
+                  </div>
+                ) : null}
+                {lesson.miniSummary ? (
+                  <div className="border-t border-zinc-200 bg-stone-50 p-4 text-sm dark:border-zinc-800 dark:bg-zinc-950">
+                    <p className="font-semibold">Mini summary</p>
+                    <p className="mt-1 text-zinc-800 dark:text-zinc-200">{lesson.miniSummary}</p>
+                  </div>
+                ) : null}
               </Panel>
 
               <AiSummaryPanel lessonId={lesson.id} />

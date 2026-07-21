@@ -24,7 +24,7 @@ export type Category = {
   color: string;
 };
 
-type LessonResource = {
+export type LessonResource = {
   id: string;
   title: string;
   type: ResourceType;
@@ -40,27 +40,34 @@ export type Lesson = {
   resources: LessonResource[];
   order: number;
   forumThreadId: string;
+  estimatedMinutes?: number;
+  checkForUnderstanding?: string;
+  miniSummary?: string;
+  prerequisiteIds: string[];
 };
 
-type Module = {
+export type Module = {
   id: string;
   title: string;
   order: number;
   lessons: Lesson[];
 };
 
-type QuizChoice = {
+export type QuizChoice = {
   id: string;
   label: string;
   isCorrect: boolean;
 };
 
-type QuizQuestion = {
+export type QuizQuestion = {
   id: string;
   prompt: string;
   type: "MCQ" | "TRUE_FALSE";
   points: number;
   choices: QuizChoice[];
+  correctRationale?: string;
+  incorrectRationale?: string;
+  misconceptionTarget?: string;
 };
 
 export type Quiz = {
@@ -73,7 +80,7 @@ export type Quiz = {
   questions: QuizQuestion[];
 };
 
-type Assignment = {
+export type Assignment = {
   id: string;
   courseId: string;
   lessonId: string;
@@ -180,4 +187,14 @@ export type Certificate = {
   courseId: string;
   studentId: string;
   issuedAt: string;
+};
+
+export type AnalyticsEvent = {
+  id: string;
+  eventType: string;
+  lessonId?: string;
+  quizId?: string;
+  courseId?: string;
+  studentId?: string;
+  metadata?: Record<string, unknown>;
 };

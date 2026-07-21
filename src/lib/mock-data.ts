@@ -119,6 +119,11 @@ export const courses: Course[] = [
               "Map AI use cases to learner needs, classroom constraints, and human review points.",
             order: 1,
             forumThreadId: "thread-ai-1",
+            estimatedMinutes: 25,
+            checkForUnderstanding:
+              "List one AI use and one review step before it affects learner feedback.",
+            miniSummary: "AI should assist, not replace, learner judgment.",
+            prerequisiteIds: [],
             resources: [
               { id: "res-ai-1", title: "AI classroom checklist", type: "pdf", url: "/api/resources/res-ai-1" },
               { id: "res-ai-2", title: "Prompt bank", type: "slides", url: "/api/resources/res-ai-2" },
@@ -133,6 +138,11 @@ export const courses: Course[] = [
               "Create reusable prompt patterns for examples, misconceptions, and differentiated explanations.",
             order: 2,
             forumThreadId: "thread-ai-2",
+            estimatedMinutes: 35,
+            checkForUnderstanding:
+              "Rewrite a weak explanation prompt into one with audience, purpose, and evidence.",
+            miniSummary: "Good prompts include role, context, constraint, and output format.",
+            prerequisiteIds: ["lesson-ai-1"],
             resources: [
               { id: "res-ai-3", title: "Differentiation prompts", type: "link", url: "/api/resources/res-ai-3" },
             ],

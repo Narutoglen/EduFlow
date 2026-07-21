@@ -115,8 +115,8 @@ const COURSES = [
         title: "Responsible AI Foundations",
         order: 1,
         lessons: [
-          { id: "lesson-ai-1", title: "Where AI helps learning", durationMinutes: 22, order: 1, content: "Map AI use cases to learner needs, classroom constraints, and human review points." },
-          { id: "lesson-ai-2", title: "Prompting for explanations", durationMinutes: 31, order: 2, content: "Create reusable prompt patterns for examples, misconceptions, and differentiated explanations." },
+          { id: "lesson-ai-1", title: "Where AI helps learning", durationMinutes: 22, order: 1, content: "Map AI use cases to learner needs, classroom constraints, and human review points.", estimatedMinutes: 25, checkForUnderstanding: "List one AI use and one review step before it affects learner feedback.", miniSummary: "AI should assist, not replace, learner judgment.", prerequisiteIds: [] },
+          { id: "lesson-ai-2", title: "Prompting for explanations", durationMinutes: 31, order: 2, content: "Create reusable prompt patterns for examples, misconceptions, and differentiated explanations.", estimatedMinutes: 35, checkForUnderstanding: "Rewrite a weak explanation prompt into one with audience, purpose, and evidence.", miniSummary: "Good prompts include role, context, constraint, and output format.", prerequisiteIds: ["lesson-ai-1"] },
         ],
       },
       {
@@ -124,7 +124,7 @@ const COURSES = [
         title: "Assessment and Feedback",
         order: 2,
         lessons: [
-          { id: "lesson-ai-3", title: "Rubrics that scale feedback", durationMinutes: 28, order: 1, content: "Use rubric language to keep feedback fair, specific, and transparent for learners." },
+          { id: "lesson-ai-3", title: "Rubrics that scale feedback", durationMinutes: 28, order: 1, content: "Use rubric language to keep feedback fair, specific, and transparent for learners.", estimatedMinutes: 30, checkForUnderstanding: "Convert one vague feedback sentence into criterion-based wording.", miniSummary: "Rubrics reduce frustration by making expectations explicit.", prerequisiteIds: ["lesson-ai-1"] },
         ],
       },
     ],

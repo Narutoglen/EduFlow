@@ -1,24 +1,17 @@
-// Seed demo accounts into the MySQL auth store (login / registration).
-//
-//   node --env-file=.env scripts/seed-auth.mjs
-//
-// Mirrors the demo users in prisma/seed.mjs so the same credentials work now
-// that auth is served from MySQL instead of Postgres. Idempotent (upsert on
-// email). Kept as a standalone mysql2 script because src/lib/auth-store.ts is
-// server-only and can't be imported by a plain Node script.
-
 import { randomBytes, scryptSync } from "node:crypto";
-import mysql from "mysql2/promise";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 
-const url = process.env.AUTH_DATABASE_URL ?? process.env.MYSQL_URL;
-if (!url) {
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
   throw new Error(
-    "AUTH_DATABASE_URL is not set. Run: node --env-file=.env scripts/seed-auth.mjs",
+    "DATABASE_URL is not set. Run with: node --env-file=.env prisma/seed.mjs",
   );
 }
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
-// Same scheme as src/lib/password.ts: scrypt$<salt>$<hash>.
-function hashPassword(password) {
+function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const derived = scryptSync(password, salt, 64).toString("hex");
   return `scrypt$${salt}$${derived}`;
@@ -83,81 +76,44 @@ const DEMO_USERS = [
   },
 ];
 
-const CREATE_USERS_TABLE = `
-  CREATE TABLE IF NOT EXISTS users (
-    id                VARCHAR(36)   NOT NULL,
-    email             VARCHAR(320)  NOT NULL,
-    name              VARCHAR(255)  NOT NULL,
-    role              ENUM('STUDENT','LECTURER','TA','ADMIN') NOT NULL DEFAULT 'STUDENT',
-    password_hash     VARCHAR(255)  NULL,
-    email_verified_at DATETIME      NULL,
-    avatar_url        VARCHAR(1024) NULL,
-    bio               TEXT          NULL,
-    institution       VARCHAR(255)  NULL,
-    is_active         TINYINT(1)    NOT NULL DEFAULT 1,
-    social_links      JSON          NULL,
-    created_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (id),
-    UNIQUE KEY users_email_key (email)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-`;
-
 async function main() {
-  const parsed = new URL(url);
-  const wantSsl =
-    process.env.AUTH_DATABASE_SSL === "true" || /[?&]ssl-mode=required/i.test(url);
+  for (const user of DEMO_USERS) {
+    const { password, ...fields } = user;
+    const passwordHash = hashPassword(password);
+    await prisma.user.upsert({
+      where: { email: user.email },
+      update: {
+        name: fields.name,
+        role: fields.role,
+        passwordHash,
+        emailVerifiedAt: new Date(),
+        avatarUrl: fields.avatarUrl,
+        bio: fields.bio,
+        institution: fields.institution ?? null,
+        socialLinks: fields.socialLinks,
+        isActive: true,
+      },
+      create: {
+        id: fields.id,
+        email: fields.email,
+        name: fields.name,
+        role: fields.role,
+        passwordHash,
+        emailVerifiedAt: new Date(),
+        avatarUrl: fields.avatarUrl,
+        bio: fields.bio,
+        institution: fields.institution ?? null,
+        socialLinks: fields.socialLinks,
+        isActive: true,
+      },
+    });
+  }
 
-  const conn = await mysql.createConnection({
-    host: parsed.hostname,
-    port: parsed.port ? Number(parsed.port) : 3306,
-    user: decodeURIComponent(parsed.username),
-    password: decodeURIComponent(parsed.password),
-    database: parsed.pathname.replace(/^\//, ""),
-    ...(wantSsl ? { ssl: { rejectUnauthorized: true } } : {}),
-  });
-
-  try {
-    await conn.query(CREATE_USERS_TABLE);
-
-    for (const user of DEMO_USERS) {
-      await conn.execute(
-        `INSERT INTO users
-           (id, email, name, role, password_hash, email_verified_at, avatar_url, bio, institution, is_active, social_links)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CAST(? AS JSON))
-         ON DUPLICATE KEY UPDATE
-           name = VALUES(name),
-           role = VALUES(role),
-           password_hash = VALUES(password_hash),
-           email_verified_at = VALUES(email_verified_at),
-           avatar_url = VALUES(avatar_url),
-           bio = VALUES(bio),
-           institution = VALUES(institution),
-           is_active = 1,
-           social_links = VALUES(social_links)`,
-        [
-          user.id,
-          user.email,
-          user.name,
-          user.role,
-          hashPassword(user.password),
-          new Date(),
-          user.avatarUrl ?? null,
-          user.bio ?? null,
-          user.institution ?? null,
-          JSON.stringify(user.socialLinks ?? []),
-        ],
-      );
-    }
-
-    const [rows] = await conn.query("SELECT COUNT(*) AS count FROM users");
-    console.log(`Seeded ${DEMO_USERS.length} demo auth accounts (${rows[0].count} users total).`);
-    console.log("Demo credentials:");
-    for (const user of DEMO_USERS) {
-      console.log(`  ${user.role.padEnd(8)} ${user.email}  /  ${user.password}`);
-    }
-  } finally {
-    await conn.end();
+  const count = await prisma.user.count();
+  console.log(`Seeded ${DEMO_USERS.length} demo auth accounts (${count} users total).`);
+  console.log("Demo credentials:");
+  for (const user of DEMO_USERS) {
+    console.log(`  ${user.role.padEnd(8)} ${user.email}  /  ${user.password}`);
   }
 }
 

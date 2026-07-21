@@ -147,20 +147,25 @@ model CourseModule {
 }
 
 model Lesson {
-  id             String             @id @default(cuid())
-  moduleId       String
-  title          String
-  content        String
-  videoUrl       String?
-  durationMinutes Int
-  order          Int
-  module         CourseModule       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  resources      LessonResource[]
-  notes          LessonNote[]
-  progress       LessonProgress[]
-  quiz           Quiz?
-  assignments    Assignment[]
-  discussionThreads DiscussionThread[]
+  id                 String             @id @default(cuid())
+  moduleId           String
+  title              String
+  content            String
+  videoUrl           String?
+  durationMinutes    Int
+  order              Int
+  checkForUnderstanding String?
+  miniSummary        String?
+  estimatedMinutes   Int?
+  prerequisiteIds    String[]           @default([])
+  module             CourseModule       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  resources          LessonResource[]
+  notes              LessonNote[]
+  progress           LessonProgress[]
+  quiz               Quiz?
+  assignments        Assignment[]
+  discussionThreads  DiscussionThread[]
+  analyticsEvents    AnalyticsEvent[]
 
   @@unique([moduleId, order])
 }
@@ -228,17 +233,21 @@ model Quiz {
   lesson           Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   questions        QuizQuestion[]
   attempts         QuizAttempt[]
+  analyticsEvents  AnalyticsEvent[]
 }
 
 model QuizQuestion {
-  id      String       @id @default(cuid())
-  quizId  String
-  prompt  String
-  type    QuestionType
-  points  Int
-  order   Int
-  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  choices QuizChoice[]
+  id                String       @id @default(cuid())
+  quizId            String
+  prompt            String
+  type              QuestionType
+  points            Int
+  order             Int
+  correctRationale  String?
+  incorrectRationale String?
+  misconceptionTarget String?
+  quiz              Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  choices           QuizChoice[]
 }
 
 model QuizChoice {
@@ -398,4 +407,17 @@ model PlatformSetting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  eventType   String
+  lessonId    String?
+  quizId      String?
+  courseId    String?
+  studentId   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  lesson      Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  quiz        Quiz?    @relation(fields: [quizId], references: [id], onDelete: SetNull)
 }
