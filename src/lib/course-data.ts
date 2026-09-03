@@ -197,8 +197,9 @@ export async function getEnrollmentFromDb(studentId: string, courseId: string): 
     orderBy: { updatedAt: "desc" },
   });
   const lessons = record.course.modules
-    .flatMap((module) => module.lessons)
-    .sort((a, b) => a.order - b.order);
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .flatMap((module) => module.lessons.slice().sort((a, b) => a.order - b.order));
   return {
     id: record.id,
     studentId,

@@ -19,6 +19,7 @@ import type {
   Role,
   User,
 } from "./types";
+import { scoreQuiz as scoreQuizEngine } from "./quiz-scoring";
 
 export type CatalogFilters = {
   q?: string;
@@ -87,8 +88,20 @@ export function getUser(userId: string) {
   return users.find((user) => user.id === userId);
 }
 
-export function getInstructor(course: Course) {
-  return getUser(course.lecturerId) as User;
+export function getInstructor(course: Course): User {
+  const user = getUser(course.lecturerId);
+  if (user) return user;
+  return {
+    id: course.lecturerId,
+    name: "Course Instructor",
+    email: "instructor@eduflow.local",
+    role: "LECTURER",
+    avatarUrl: "/globe.svg",
+    bio: "EduFlow Course Lecturer",
+    institution: "EduFlow Academy",
+    isActive: true,
+    socialLinks: [],
+  };
 }
 
 export function getEnrollment(studentId: string, courseId: string) {
@@ -102,10 +115,14 @@ export function getEnrollmentsForStudent(studentId: string) {
   return enrollments.filter((enrollment) => enrollment.studentId === studentId);
 }
 
-export function getLessons(course: Course) {
-  return course.modules
-    .flatMap((module) => module.lessons)
-    .sort((a, b) => a.order - b.order);
+/**
+ * Returns all lessons for a course in sequential order (modules ordered first, then lessons within each module).
+ */
+export function getLessons(course: Course): Lesson[] {
+  if (!course || !course.modules) return [];
+  return [...course.modules]
+    .sort((a, b) => a.order - b.order)
+    .flatMap((module) => [...module.lessons].sort((a, b) => a.order - b.order));
 }
 
 export function getLesson(courseId: string, lessonId: string) {
@@ -124,17 +141,17 @@ export function getResource(resourceId: string) {
   return undefined;
 }
 
-export function getFirstLesson(course: Course) {
+export function getFirstLesson(course: Course): Lesson | undefined {
   return getLessons(course)[0];
 }
 
-export function getNextLesson(course: Course, lessonId: string) {
+export function getNextLesson(course: Course, lessonId: string): Lesson | undefined {
   const lessons = getLessons(course);
   const index = lessons.findIndex((lesson) => lesson.id === lessonId);
   return index >= 0 ? lessons[index + 1] : undefined;
 }
 
-export function getPreviousLesson(course: Course, lessonId: string) {
+export function getPreviousLesson(course: Course, lessonId: string): Lesson | undefined {
   const lessons = getLessons(course);
   const index = lessons.findIndex((lesson) => lesson.id === lessonId);
   return index > 0 ? lessons[index - 1] : undefined;
@@ -144,22 +161,41 @@ export function canAccessLesson(
   course: Course,
   lesson: Lesson,
   enrollment?: Enrollment,
-) {
+): boolean {
+  if (!course || !lesson) return false;
   if (course.allowSkipAhead) return true;
-  if (!enrollment) return lesson.order === 1;
   const lessons = getLessons(course);
   const currentIndex = lessons.findIndex((item) => item.id === lesson.id);
+  if (currentIndex === -1) return false;
+
+  // First lesson of the course is always accessible (preview for anon, start for enrolled)
+  if (currentIndex === 0) return true;
+
+  // Subsequent lessons require active enrollment and prior lesson completion
+  if (!enrollment) return false;
+
+  const completedSet = new Set(enrollment.completedLessonIds ?? []);
   const previousLessons = lessons.slice(0, currentIndex);
-  return previousLessons.every((item) =>
-    enrollment.completedLessonIds.includes(item.id),
-  );
+  return previousLessons.every((item) => completedSet.has(item.id));
 }
 
-export function completionForCourse(course: Course, enrollment?: Enrollment) {
-  if (!enrollment) return 0;
-  const lessonCount = getLessons(course).length;
-  if (lessonCount === 0) return 0;
-  return Math.round((enrollment.completedLessonIds.length / lessonCount) * 100);
+export function completionForCourse(course: Course, enrollment?: Enrollment): number {
+  if (!enrollment || !course) return 0;
+  const courseLessons = getLessons(course);
+  const totalCount = courseLessons.length;
+  if (totalCount === 0) return 0;
+
+  const courseLessonIds = new Set(courseLessons.map((l) => l.id));
+  const completedInCourse = (enrollment.completedLessonIds ?? []).filter((id) =>
+    courseLessonIds.has(id),
+  );
+  // Deduplicate in case completedLessonIds has duplicate entries
+  const uniqueCompletedCount = new Set(completedInCourse).size;
+
+  return Math.min(
+    100,
+    Math.max(0, Math.round((uniqueCompletedCount / totalCount) * 100)),
+  );
 }
 
 export function getQuizForLesson(course: Course, lessonId: string) {
@@ -174,7 +210,7 @@ export function getAssignmentsForLesson(course: Course, lessonId: string) {
 
 export function scoreQuiz(
   quiz: Quiz,
-  answers: Record<string, string>,
+  answers: Record<string, string | string[]>,
 ): {
   correctCount: number;
   totalQuestions: number;
@@ -183,37 +219,18 @@ export function scoreQuiz(
   scorePercent: number;
   passed: boolean;
 } {
-  const possiblePoints = quiz.questions.reduce(
-    (total, question) => total + question.points,
-    0,
-  );
-  const earnedPoints = quiz.questions.reduce((total, question) => {
-    const selected = question.choices.find(
-      (choice) => choice.id === answers[question.id],
-    );
-    return selected?.isCorrect ? total + question.points : total;
-  }, 0);
-  const correctCount = quiz.questions.filter((question) => {
-    const selected = question.choices.find(
-      (choice) => choice.id === answers[question.id],
-    );
-    return selected?.isCorrect;
-  }).length;
-  const scorePercent = possiblePoints
-    ? Math.round((earnedPoints / possiblePoints) * 100)
-    : 0;
-
+  const result = scoreQuizEngine(quiz.questions, answers, quiz.passScore);
   return {
-    correctCount,
-    totalQuestions: quiz.questions.length,
-    earnedPoints,
-    possiblePoints,
-    scorePercent,
-    passed: scorePercent >= quiz.passScore,
+    correctCount: result.correctCount,
+    totalQuestions: result.totalQuestions,
+    earnedPoints: result.earnedPoints,
+    possiblePoints: result.totalPoints,
+    scorePercent: result.scorePercent,
+    passed: result.passed,
   };
 }
 
-export function canIssueCertificate(enrollment?: Enrollment) {
+export function canIssueCertificate(enrollment?: Enrollment): boolean {
   return Boolean(enrollment && enrollment.progressPercent === 100);
 }
 

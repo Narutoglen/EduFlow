@@ -9,9 +9,9 @@ import type { NextRequest } from "next/server";
 // requireApiRole. We deliberately avoid node:crypto here so this stays
 // compatible with the edge runtime.
 
-const SESSION_COOKIE = "eduflow_session";
+export const SESSION_COOKIE = "eduflow_session";
 
-const PROTECTED_PAGE_PREFIXES = [
+export const PROTECTED_PAGE_PREFIXES = [
   "/dashboard",
   "/achievements",
   "/profile",
@@ -21,14 +21,14 @@ const PROTECTED_PAGE_PREFIXES = [
   "/admin",
 ];
 
-const PUBLIC_API_PATHS = new Set([
+export const PUBLIC_API_PATHS = new Set([
   "/api/ai/health",
   "/api/auth/register",
   "/api/auth/session",
 ]);
 
 /** Best-effort read of the token's expiry (base64url(userId.expiresAt).sig). */
-function tokenExpiry(token: string): number | null {
+export function tokenExpiry(token: string): number | null {
   try {
     const encoded = token.split(".")[0];
     if (!encoded) return null;
@@ -42,7 +42,7 @@ function tokenExpiry(token: string): number | null {
   }
 }
 
-function hasLiveSession(req: NextRequest): boolean {
+export function hasLiveSession(req: NextRequest): boolean {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return false;
   const exp = tokenExpiry(token);

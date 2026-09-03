@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { requireApiRole } from "@/lib/api-auth";
+import { recordLessonProgress } from "@/lib/assessments";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/session";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -18,57 +19,58 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
-  const payload = contentType.includes("application/json")
-    ? await request.json()
+  const isJson = contentType.includes("application/json");
+
+  const auth = await requireApiRole(["STUDENT"]);
+  if (auth instanceof NextResponse) return auth;
+  const student = auth;
+
+  const payload = isJson
+    ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
-  const courseId = String(payload.courseId ?? "");
-  const lessonId = String(payload.lessonId ?? "");
+
+  const courseId = String(payload.courseId ?? "").trim();
+  const lessonId = String(payload.lessonId ?? "").trim();
   const returnTo = String(
     payload.returnTo ?? `/learn/${courseId}/${lessonId}?notice=progress-saved`,
   );
-  const student = await requireRole("STUDENT");
+
+  if (!lessonId) {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "lessonId is required." } },
+      { status: 400 },
+    );
+  }
+
   const lesson = await prisma.lesson.findUnique({
     where: { id: lessonId },
-    include: { module: { include: { course: { include: { modules: { include: { lessons: true } } } } } } },
-  });
-  if (!lesson || lesson.module.courseId !== courseId || lesson.module.course.deletedAt) {
-    return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
-  }
-  await prisma.lessonProgress.upsert({
-    where: { studentId_lessonId: { studentId: student.id, lessonId } },
-    update: { completed: true, watchedSeconds: 0, lastPlaybackSecond: 0 },
-    create: { studentId: student.id, lessonId, completed: true },
-  });
-  const lessons = lesson.module.course.modules.flatMap((module) => module.lessons);
-  const completed = await prisma.lessonProgress.count({
-    where: {
-      studentId: student.id,
-      completed: true,
-      lessonId: { in: lessons.map((item) => item.id) },
-    },
-  });
-  await prisma.enrollment.upsert({
-    where: { studentId_courseId: { studentId: student.id, courseId } },
-    update: {
-      progressPercent: lessons.length ? Math.round((completed / lessons.length) * 100) : 0,
-    },
-    create: {
-      studentId: student.id,
-      courseId,
-      progressPercent: lessons.length ? Math.round((completed / lessons.length) * 100) : 0,
-    },
+    include: { module: { select: { courseId: true } } },
   });
 
-  if (!contentType.includes("application/json")) {
+  if (!lesson || (courseId && lesson.module.courseId !== courseId)) {
+    return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+  }
+
+  const result = await recordLessonProgress({
+    studentId: student.id,
+    lessonId,
+  });
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  if (!isJson) {
     return NextResponse.redirect(new URL(returnTo, request.url), 303);
   }
 
   return NextResponse.json({
-    courseId,
+    courseId: lesson.module.courseId,
     lessonId,
     courseFound: true,
     lessonFound: true,
     progressSynced: true,
+    progressPercent: result.data.progressPercent,
     resumeFromSeconds: 0,
   });
 }

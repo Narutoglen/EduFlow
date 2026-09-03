@@ -24,7 +24,9 @@ function base64url(input: Buffer | string): string {
 
 /** Mint an HS256 JWT matching the ai-service verifier (sub, role, enrolled, owned, aud, exp). */
 export function mintServiceToken(p: Principal): string {
-  if (!SECRET) throw new Error("AI_SERVICE_TOKEN_SECRET is not configured");
+  const secret = process.env.AI_SERVICE_TOKEN_SECRET;
+  if (!secret) throw new Error("AI_SERVICE_TOKEN_SECRET is not configured");
+  const audience = process.env.AI_SERVICE_TOKEN_AUD ?? AUDIENCE;
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "HS256", typ: "JWT" };
   const payload = {
@@ -32,12 +34,12 @@ export function mintServiceToken(p: Principal): string {
     role: p.role,
     enrolled: p.enrolledCourseIds,
     owned: p.ownedCourseIds,
-    aud: AUDIENCE,
+    aud: audience,
     iat: now,
     exp: now + TOKEN_TTL_SECONDS,
   };
   const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}`;
-  const signature = createHmac("sha256", SECRET).update(signingInput).digest("base64url");
+  const signature = createHmac("sha256", secret).update(signingInput).digest("base64url");
   return `${signingInput}.${signature}`;
 }
 

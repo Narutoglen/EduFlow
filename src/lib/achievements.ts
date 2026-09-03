@@ -49,7 +49,7 @@ export type StudentAchievements = {
 };
 
 /** Derive the badge wall from the student's verified results. */
-function computeAchievements(
+export function computeAchievements(
   summary: AchievementSummary,
   scores: TestScore[],
 ): Achievement[] {

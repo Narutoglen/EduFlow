@@ -52,3 +52,22 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Universal HERMES Ignore Rules
+node_modules/
+dist/
+build/
+.turbo/
+.vercel/
+*$py.class
+.ruff_cache/
+venv/
+.venv/
+env/
+*.egg-info/
+.env.local
+.env.*.local
+*.log
+$null
+*.zip
+Thumbs.db

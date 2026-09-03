@@ -19,6 +19,7 @@ import {
   getQuizAttemptsForStudentFromDb,
   getSubmissionsForStudentFromDb,
 } from "@/lib/course-data";
+import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/session";
 
 export default async function StudentDashboardPage() {
@@ -32,10 +33,14 @@ export default async function StudentDashboardPage() {
       })),
     )
   ).filter((item) => item.course);
-  const [notifications, quizAttempts, submissions] = await Promise.all([
+  const [notifications, quizAttempts, submissions, dbCertificates] = await Promise.all([
     getNotificationsForUserFromDb(student.id),
     getQuizAttemptsForStudentFromDb(student.id),
     getSubmissionsForStudentFromDb(student.id),
+    prisma.certificate.findMany({
+      where: { studentId: student.id },
+      include: { course: true },
+    }).catch(() => []),
   ]);
   const continueEnrollment =
     enrollments.find((enrollment) => enrollment.progressPercent < 100) ??
@@ -227,17 +232,38 @@ export default async function StudentDashboardPage() {
               <h2 className="text-xl font-semibold">Certificates</h2>
             </div>
             <div className="mt-4 space-y-3">
-              {enrollments.filter(canIssueCertificate).map((enrollment) => {
-                const course = enrolledCourses.find((item) => item.enrollment.id === enrollment.id)?.course;
-                return (
-                  <div key={enrollment.id} className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
-                    <p className="font-semibold">{course?.title}</p>
-                    <ButtonLink href="/verify/EDU-2026-DATA-9K2" variant="secondary">
-                      Verify certificate
-                    </ButtonLink>
+              {dbCertificates.length > 0 ? (
+                dbCertificates.map((cert) => (
+                  <div key={cert.id} className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
+                    <p className="font-semibold">{cert.course.title}</p>
+                    <p className="text-xs text-emerald-700">ID: {cert.verificationId}</p>
+                    <div className="mt-2">
+                      <ButtonLink href={`/verify/${encodeURIComponent(cert.verificationId)}`} variant="secondary">
+                        Verify certificate
+                      </ButtonLink>
+                    </div>
                   </div>
-                );
-              })}
+                ))
+              ) : enrollments.filter(canIssueCertificate).length > 0 ? (
+                enrollments.filter(canIssueCertificate).map((enrollment) => {
+                  const course = enrolledCourses.find((item) => item.enrollment.id === enrollment.id)?.course;
+                  const verificationId = `EDU-2026-${(course?.slug ?? "CERT").toUpperCase().slice(0, 8)}-VERIFIED`;
+                  return (
+                    <div key={enrollment.id} className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
+                      <p className="font-semibold">{course?.title ?? "Completed Course"}</p>
+                      <div className="mt-2">
+                        <ButtonLink href={`/verify/${encodeURIComponent(verificationId)}`} variant="secondary">
+                          Verify certificate
+                        </ButtonLink>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-zinc-500">
+                  Complete 100% of a course to earn a verifiable certificate.
+                </p>
+              )}
             </div>
           </Panel>
         </aside>

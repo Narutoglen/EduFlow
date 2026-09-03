@@ -37,7 +37,7 @@ function valueOf(value: string | string[] | undefined) {
 function noticeText(notice?: string) {
   return {
     "progress-saved": "Lesson progress saved.",
-    "quiz-passed": "Quiz submitted. Nice work - you passed this checkpoint.",
+    "quiz-passed": "Quiz submitted. Nice work — you passed this checkpoint.",
     "quiz-review": "Quiz submitted. Review the lesson notes and try the checkpoint again.",
     "assignment-submitted": "Assignment submitted for review.",
   }[notice ?? ""];
@@ -150,16 +150,14 @@ export default async function LearnPage({
                     <span>{item.durationMinutes}m</span>
                   </>
                 );
-                return (
-                  accessible ? (
-                    <a key={item.id} href={`/learn/${course.id}/${item.id}`} className={itemClass}>
-                      {content}
-                    </a>
-                  ) : (
-                    <div key={item.id} aria-disabled="true" className={`${itemClass} opacity-70`}>
-                      {content}
-                    </div>
-                  )
+                return accessible ? (
+                  <a key={item.id} href={`/learn/${course.id}/${item.id}`} className={itemClass}>
+                    {content}
+                  </a>
+                ) : (
+                  <div key={item.id} aria-disabled="true" className={`${itemClass} opacity-70`}>
+                    {content}
+                  </div>
                 );
               })}
             </div>
@@ -228,12 +226,6 @@ export default async function LearnPage({
                 </div>
               </Panel>
 
-              <AiSummaryPanel lessonId={lesson.id} />
-
-              <FlashcardStudy lessonId={lesson.id} />
-
-              <VoiceAssistant courseId={course.id} />
-
               <Panel>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -253,7 +245,7 @@ export default async function LearnPage({
                     <h3 className="text-sm font-semibold">Notes</h3>
                     <textarea
                       className="mt-3 min-h-36 w-full rounded-md border border-zinc-200 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-950"
-                      defaultValue="Summarize the educator review checkpoint and examples I can reuse in my class."
+                      defaultValue="Summarize key takeaways and notes for this lesson."
                     />
                   </div>
                   <div>
@@ -315,23 +307,28 @@ export default async function LearnPage({
                     <input type="hidden" name="quizId" value={quiz.id} />
                     <input type="hidden" name="courseId" value={course.id} />
                     <input type="hidden" name="lessonId" value={lesson.id} />
-                    {quiz.questions.map((question) => (
-                      <fieldset key={question.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-                        <legend className="px-1 font-medium">{question.prompt}</legend>
-                        <div className="mt-3 space-y-2">
-                          {question.choices.map((choice) => (
-                            <label key={choice.id} className="flex gap-2 text-sm">
-                              <input
-                                type="radio"
-                                name={question.id}
-                                value={choice.id}
-                              />
-                              {choice.label}
-                            </label>
-                          ))}
-                        </div>
-                      </fieldset>
-                    ))}
+                    {quiz.questions.map((question) => {
+                      const isMulti = question.type === "MULTI_SELECT";
+                      return (
+                        <fieldset key={question.id} className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+                          <legend className="px-1 font-medium">
+                            {question.prompt} {isMulti ? <span className="text-xs text-zinc-500">(Select all that apply)</span> : null}
+                          </legend>
+                          <div className="mt-3 space-y-2">
+                            {question.choices.map((choice) => (
+                              <label key={choice.id} className="flex items-center gap-2 text-sm">
+                                <input
+                                  type={isMulti ? "checkbox" : "radio"}
+                                  name={question.id}
+                                  value={choice.id}
+                                />
+                                {choice.label}
+                              </label>
+                            ))}
+                          </div>
+                        </fieldset>
+                      );
+                    })}
                     <button className="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-zinc-950">
                       Submit quiz
                     </button>
