@@ -156,7 +156,7 @@ export default async function CourseDetailPage({
                 Resume course
               </ButtonLink>
               {canIssueCertificate(enrollment) ? (
-                <ButtonLink href="/verify/EDU-2026-DATA-9K2" variant="secondary">
+                <ButtonLink href={`/verify/EDU-2026-${(course.slug || "CERT").toUpperCase().slice(0, 8)}-VERIFIED`} variant="secondary">
                   <Award size={16} />
                   View certificate
                 </ButtonLink>

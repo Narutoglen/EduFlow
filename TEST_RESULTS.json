@@ -1,0 +1,21 @@
+{
+  "schema": "hermes.tests.v6",
+  "run_id": "hermes-2026-07-27-v6-EduFlow",
+  "project": "EduFlow",
+  "produced_at": "2026-07-27T23:45:15.151874",
+  "summary": {
+    "status": "RUNNABLE",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "unrunnable": 0
+  },
+  "suites": [
+    {
+      "suite": "TypeScript Compilation",
+      "tool": "npx tsc --noEmit",
+      "status": "PASS",
+      "exit_code": 0
+    }
+  ]
+}

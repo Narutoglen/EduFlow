@@ -38,6 +38,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but keep the committed template so contributors know every variable.
+!.env.example
 
 # vercel
 .vercel
@@ -50,3 +52,22 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Universal HERMES Ignore Rules
+node_modules/
+dist/
+build/
+.turbo/
+.vercel/
+*$py.class
+.ruff_cache/
+venv/
+.venv/
+env/
+*.egg-info/
+.env.local
+.env.*.local
+*.log
+$null
+*.zip
+Thumbs.db

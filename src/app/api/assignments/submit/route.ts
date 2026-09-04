@@ -1,18 +1,34 @@
 import { NextResponse } from "next/server";
+import { requireApiRole } from "@/lib/api-auth";
+import { recordAssignmentSubmission } from "@/lib/assessments";
 import { storageAdapter } from "@/lib/adapters";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/session";
 
 export async function POST(request: Request) {
   const contentType = request.headers.get("content-type") ?? "";
-  const payload = contentType.includes("application/json")
-    ? await request.json()
+  const isJson = contentType.includes("application/json");
+
+  const auth = await requireApiRole(["STUDENT"]);
+  if (auth instanceof NextResponse) return auth;
+  const student = auth;
+
+  const payload = isJson
+    ? await request.json().catch(() => ({}))
     : Object.fromEntries((await request.formData()).entries());
-  const assignmentId = String(payload.assignmentId ?? "");
-  const courseId = String(payload.courseId ?? "");
-  const lessonId = String(payload.lessonId ?? "");
-  const student = await requireRole("STUDENT");
+
+  const assignmentId = String(payload.assignmentId ?? "").trim();
+  const courseId = String(payload.courseId ?? "").trim();
+  const lessonId = String(payload.lessonId ?? "").trim();
+  const body = String(payload.body ?? "").trim();
+
+  if (!assignmentId) {
+    return NextResponse.json(
+      { error: { code: "BAD_REQUEST", message: "assignmentId is required." } },
+      { status: 400 },
+    );
+  }
+
   const assignment = await prisma.assignment.findUnique({
     where: { id: assignmentId },
     include: { course: true, lesson: true },
@@ -22,15 +38,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
   }
 
-  const upload = await storageAdapter.createUploadUrl(`${assignmentId}.txt`);
-  const submission = await prisma.assignmentSubmission.create({
-    data: {
-      assignmentId,
-      studentId: student.id,
-      body: String(payload.body ?? ""),
-      fileUrl: upload.publicUrl,
-    },
+  const result = await recordAssignmentSubmission({
+    studentId: student.id,
+    assignmentId,
+    body,
   });
+
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  const upload = await storageAdapter.createUploadUrl(`${assignmentId}.txt`);
+
   await createUserNotification({
     userId: student.id,
     title: "Assignment submitted",
@@ -46,21 +65,21 @@ export async function POST(request: Request) {
     ].join("\n"),
   });
 
-  if (!contentType.includes("application/json")) {
+  if (!isJson) {
     return NextResponse.redirect(
-      new URL(`/learn/${courseId}/${lessonId}?notice=assignment-submitted`, request.url),
+      new URL(`/learn/${courseId || assignment.courseId}/${lessonId || assignment.lessonId}?notice=assignment-submitted`, request.url),
       303,
     );
   }
 
   return NextResponse.json(
     {
-      id: submission.id,
+      id: result.data.submissionId,
       assignmentId,
       studentId: student.id,
-      status: "SUBMITTED",
+      status: result.data.status,
       upload,
-      submittedText: String(payload.body ?? ""),
+      submittedText: body,
     },
     { status: 201 },
   );

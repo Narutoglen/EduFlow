@@ -70,13 +70,17 @@ export const videoAdapter = {
 export const certificateAdapter = {
   async createCertificate(studentId: string, courseId: string) {
     const enrollment = getEnrollment(studentId, courseId);
+    const course = getCourseById(courseId);
+    const verificationId = `EDU-2026-${(course?.slug ?? "CERT").toUpperCase().slice(0, 8)}-VERIFIED`;
+    const eligible = Boolean(enrollment && enrollment.progressPercent === 100);
     return {
       provider: "local-pdf-renderer",
-      eligible: enrollment?.progressPercent === 100,
-      downloadUrl:
-        enrollment?.progressPercent === 100
-          ? `/api/certificates?studentId=${studentId}&courseId=${courseId}`
-          : null,
+      eligible,
+      verificationId: eligible ? verificationId : null,
+      downloadUrl: eligible
+        ? `/api/certificates?verificationId=${encodeURIComponent(verificationId)}`
+        : null,
     };
   },
 };
+

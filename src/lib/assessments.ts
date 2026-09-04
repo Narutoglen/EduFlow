@@ -1,7 +1,8 @@
 import "server-only";
 import { prisma } from "./prisma";
 import { isEnrolled } from "./authz";
-import { scoreQuiz, type QuizScore } from "./quiz-scoring";
+import { scoreQuiz, type QuizAnswers, type QuizScore } from "./quiz-scoring";
+import { sanitizeAssignmentSubmission } from "./sanitization";
 
 // Write side of the student "scored work" flow. All scoring happens on the
 // server from the database's source of truth (QuizChoice.isCorrect); any score
@@ -60,7 +61,7 @@ export async function recomputeEnrollmentGrade(studentId: string, courseId: stri
 export async function scoreAndRecordQuizAttempt(input: {
   studentId: string;
   quizId: string;
-  answers: Record<string, string>;
+  answers: QuizAnswers;
 }): Promise<AssessmentResult<{ attemptId: string } & QuizScore>> {
   const quiz = await prisma.quiz.findUnique({
     where: { id: input.quizId },
@@ -69,7 +70,12 @@ export async function scoreAndRecordQuizAttempt(input: {
       courseId: true,
       passScore: true,
       questions: {
-        select: { id: true, points: true, choices: { select: { id: true, isCorrect: true } } },
+        select: {
+          id: true,
+          type: true,
+          points: true,
+          choices: { select: { id: true, isCorrect: true } },
+        },
       },
     },
   });
@@ -85,7 +91,7 @@ export async function scoreAndRecordQuizAttempt(input: {
     data: {
       quizId: quiz.id,
       studentId: input.studentId,
-      answers: input.answers,
+      answers: JSON.parse(JSON.stringify(input.answers)),
       scorePercent: score.scorePercent,
       passed: score.passed,
     },
@@ -113,6 +119,8 @@ export async function recordAssignmentSubmission(input: {
     return { ok: false, status: 403, error: "You are not enrolled in this course." };
   }
 
+  const cleanBody = sanitizeAssignmentSubmission(input.body);
+
   // Reuse an existing ungraded submission so re-submitting doesn't pile up rows;
   // once graded, a fresh submission row is created.
   const existing = await prisma.assignmentSubmission.findFirst({
@@ -123,14 +131,14 @@ export async function recordAssignmentSubmission(input: {
   const submission = existing
     ? await prisma.assignmentSubmission.update({
         where: { id: existing.id },
-        data: { body: input.body, submittedAt: new Date() },
+        data: { body: cleanBody, submittedAt: new Date() },
         select: { id: true, status: true },
       })
     : await prisma.assignmentSubmission.create({
         data: {
           assignmentId: assignment.id,
           studentId: input.studentId,
-          body: input.body,
+          body: cleanBody,
           status: "SUBMITTED",
         },
         select: { id: true, status: true },
